@@ -28,17 +28,21 @@ breaks it subtracts the two. No clock sync, no drift problem.
 
 | Type | Effect |
 |---|---|
-| `role start` / `role finish` | Set this board's job. Saved to EEPROM, board reboots. |
+| `role solo` | Both beams on this one board (A0 starts, A1 stops). No radio or shield needed. |
+| `role start` / `role finish` | Set this board's job for radio operation. Saved to EEPROM, board reboots. |
+| `display none\|lcd\|i2clcd\|tm1637\|max7219` | Which display is wired up. Remembered. |
+| `t` | Send 12.34 to the display to check its wiring. |
 | `a` | Align mode: live sensor numbers 5x a second. Use while pointing the laser. |
-| `l` | Lap mode (finish gate): time between two breaks of its own beam. Tests one gate alone. |
+| `l` | Lap mode: time between two breaks of the start beam alone. Works with a single LDR. |
 | `r` | Re-arm. |
 | `s` | Buzzer on/off. |
 | `h` | Help. |
 
 ## Roadmap
 
-1. **Phase 1 - radio link**: shields on, no other wiring. Finish gate reports `link OK rtt N ms`.
+1. **Phase 1 - radio link** (done, 15-16 ms round trip): shields on, no other wiring.
 2. **Phase 2 - beam sensor**: LDR + laser on a breadboard, one board at a time (shield off). Align mode and lap mode.
-3. **Phase 3 - two gates in the garage**: both together. Walk through both beams, read the time.
-4. **Phase 4 - outdoors**: hoods for the LDRs, tripods, battery power, faster sensor (phototransistor).
-5. **Phase 5 - productise**: 3D-printed housings (Bambu P2S), display on the finish gate, logging app.
+3. **Phase 2B - both beams on one board**: two sensors joined by a long cable, plus a display. The whole product except the radio, and it needs no soldering.
+4. **Phase 3 - two gates over the radio**: needs stackable headers soldered to the shields.
+5. **Phase 4 - outdoors**: hoods for the LDRs, tripods, battery power, faster sensor (phototransistor).
+6. **Phase 5 - productise**: 3D-printed housings (Bambu P2S), display on the finish gate, logging app.

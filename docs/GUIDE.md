@@ -1,8 +1,8 @@
 # BreakBeam build guide (absolute beginner edition)
 
 Read this in order. Each phase ends with a test that must pass before you go on.
-Nothing here needs soldering until Phase 3, and Phase 3 only needs it if your
-shields have no sockets on top (you will check in Phase 1).
+Nothing here needs soldering until Phase 3. Phase 3 needs it because these
+shields have no sockets on top, which Phase 1 confirmed.
 
 ---
 
@@ -180,6 +180,124 @@ LDR a high resistance and A0 falls towards 0. The firmware watches for a sudden 
 **Pass:** laser on = LEDs on, hand through beam = a lap time. Now do the same on the
 START board (COM4). Align mode works there too; lap mode is finish-only, so just check
 that a hand through the beam prints `START beam broken (event N)`.
+
+---
+
+## Phase 2B - both beams on ONE board (the garage run)
+
+**Goal:** walk through two beams 3 m apart and read a real time, with no radio and
+no soldering. This is the whole product except the radio link, which Phase 1 already
+proved.
+
+The shields have no sockets on top, so a shield and jumper wires cannot be on the
+same board until the stackable headers arrive. This phase sidesteps that: put both
+beams on one Uno and join them with a long cable.
+
+### What you need on top of Phase 2
+
+| Part | Notes |
+|---|---|
+| A second LDR | Same as the first. If you only have one, skip to "Only one LDR?" below. |
+| A second laser pen | Taped on, same as the first. |
+| A long 3-core cable | An old ethernet patch lead with one end cut off is ideal: eight cores, you use three. Speaker wire, bell wire or an old USB cable also work. Length 3 to 5 m. |
+| A display (optional) | See "Adding a display" below. |
+
+### The remote sensor head
+
+Only one sensor needs to travel. Keep the Uno and breadboard at the finish line with
+its own sensor beside them, and run the cable to the start line.
+
+Build the far end as a little sensor head so the noisy long wires carry a low
+impedance signal rather than a high one:
+
+```
+   at the FAR end (start line):        at the BOARD end:
+
+   5V  ----+                            cable core 1 --- breadboard + rail
+           |                            cable core 2 --- breadboard - rail
+         [ LDR ]                        cable core 3 --- Uno A0
+           |
+           +---- signal (core 3)
+           |
+        [ 10k ]
+           |
+   GND ----+
+```
+
+So: LDR and 10 kΩ both live at the far end, exactly the divider from Phase 2, and the
+three cable cores carry 5 V out, ground out, and the divider's middle back to A0.
+Twist the cores or just let them lie, either is fine over 5 m.
+
+The near sensor is the Phase 2 circuit unchanged, but on **A1** instead of A0.
+
+### Full wiring
+
+| Uno pin | Goes to |
+|---|---|
+| 5V | breadboard + rail |
+| GND | breadboard − rail |
+| A0 | far sensor head, middle of its divider (via the long cable) |
+| A1 | near sensor, middle of its divider |
+| D7 | 220 Ω to an LED, LED short leg to − rail. Lit when the START beam lands. |
+| D6 | 220 Ω to a second LED, short leg to − rail. Lit when the FINISH beam lands. |
+| D9 | buzzer +, buzzer − to − rail |
+
+A second LED is worth wiring: one LED per beam means you can see both are aligned
+without reading the screen.
+
+### Adding a display
+
+Pick whichever you actually own and wire only that one. Tell the board with the
+`display` command and it remembers.
+
+| You have | Command | Wiring |
+|---|---|---|
+| 16x2 LCD, the 16-pin one with a 10 kΩ contrast pot | `display lcd` | RS=D12, E=D11, D4=D5, D5=D4, D6=D3, D7=D2, RW to GND, VSS to GND, VDD to 5V, VO to the pot wiper (pot ends to 5V and GND), LED+ via 220 Ω to 5V, LED− to GND |
+| 16x2 LCD with a small board soldered on the back and only 4 pins | `display i2clcd` | SDA=A4, SCL=A5, VCC=5V, GND=GND. The address is found for you. |
+| 4-digit "clock" module, 4 pins marked CLK and DIO | `display tm1637` | CLK=D2, DIO=D3, VCC=5V, GND=GND |
+| 8-digit 7-segment module, 5 pins marked DIN CS CLK | `display max7219` | DIN=D11, CS=D10, CLK=D12, VCC=5V, GND=GND |
+| None of these, or nothing yet | `display none` | Times still print to the PC |
+
+Type `t` at any time and the board sends 12.34 to the display, so you can check the
+wiring before you run anything.
+
+Two notes. Most TM1637 clock modules have a colon rather than decimal points, so
+12.34 s appears as 12:34. That is the module, not a fault. And if what you have is an
+8x8 dot-matrix or a bare 12-pin 4-digit display, say so and the driver can be added.
+
+### Run it
+
+1. Upload the firmware, open the serial monitor on the board at 115200 baud with
+   Newline endings.
+2. Type `role solo` and Enter. The board reboots into two-beam mode and does not
+   touch the radio.
+3. Type `display lcd` (or whichever you have), then `t` to prove the display works.
+4. Type `a` for align mode. You now get both sensors' numbers five times a second:
+
+   ```
+   A0=612 base=610 trips<488 [OK]   A1=598 base=596 trips<477 [OK]
+   ```
+
+5. Aim each laser at its LDR until both say `OK` and both LEDs are lit. Type `a`
+   again to stop the numbers.
+6. Walk through the start beam, then the finish beam:
+
+   ```
+   START! clock running
+   === RUN 1   TIME 2.318 s ===
+   CSV,1,2.318
+   ```
+
+**Pass:** repeatable times that match a stopwatch to within a couple of tenths, and
+the same number on the display.
+
+### Only one LDR?
+
+Everything above still works with one beam. Wire it to A0, set `role solo`, then type
+`l` for lap mode. The clock starts on the first break of that beam and stops on the
+second, so you can time a there-and-back or just wave a hand twice. You still exercise
+the sensor, the threshold logic, the buzzer, the display and the timing path, which is
+most of what tonight is for.
 
 ---
 
