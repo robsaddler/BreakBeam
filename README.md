@@ -43,6 +43,6 @@ breaks it subtracts the two. No clock sync, no drift problem.
 1. **Phase 1 - radio link** (done, 15-16 ms round trip): shields on, no other wiring.
 2. **Phase 2 - beam sensor**: LDR + laser on a breadboard, one board at a time (shield off). Align mode and lap mode.
 3. **Phase 2B - both beams on one board**: two sensors joined by a long cable, plus a display. The whole product except the radio, and it needs no soldering.
-4. **Phase 3 - two gates over the radio**: needs stackable headers soldered to the shields.
+4. **Phase 3 - two gates over the radio**: the shield needs only six wires (3V3, 5V, GND, D0, D1, D8), so jumper wires work today and stackable headers are a later tidy-up.
 5. **Phase 4 - outdoors**: hoods for the LDRs, tripods, battery power, faster sensor (phototransistor).
 6. **Phase 5 - productise**: 3D-printed housings (Bambu P2S), display on the finish gate, logging app.

@@ -1,8 +1,8 @@
 # BreakBeam build guide (absolute beginner edition)
 
 Read this in order. Each phase ends with a test that must pass before you go on.
-Nothing here needs soldering until Phase 3. Phase 3 needs it because these
-shields have no sockets on top, which Phase 1 confirmed.
+Nothing here needs soldering at all. The shields have no sockets on top, but the
+radio only uses six Arduino pins, so six jumper wires replace them (see Phase 3).
 
 ---
 
@@ -305,15 +305,46 @@ most of what tonight is for.
 
 **Goal:** walk through START, then FINISH, and read `=== RUN 1  TIME 2.345 s ===`.
 
-Now each board needs its shield **and** its sensor wiring at the same time. That
-depends on your Phase 1 answer:
+Each board now needs its shield **and** its sensor wiring at the same time.
 
-- Rob's shields have only holes, so: you need "Arduino stackable headers" (a £2-3 kit of
-  long-legged sockets: 2 x 8-pin, 1 x 10-pin, 1 x 6-pin from The Pi Hut, Pimoroni,
-  Amazon). Push them into the shield's holes from the top and solder each pin
-  underneath. Ten minutes with any soldering iron. If soldering is a step too far
-  right now, a cheaper hack: solder five single wires (5V, GND, A0, D7, D9) into the
-  holes and run them to the breadboard.
+### No soldering needed after all: the six-wire shield
+
+The shield's schematic shows the radio is wired to only **six** Arduino pins. Every
+other pin on the shield is a bare pass-through with nothing attached to it.
+
+| Shield pin | Arduino pin | What it does |
+|---|---|---|
+| 3V3 | 3.3V | powers the SRF radio |
+| 5V | 5V | powers the two analogue switches that gate the serial lines |
+| GND | GND | ground |
+| D0 | D0 | radio transmit into the Uno's receive |
+| D1 | D1 | Uno transmit into the radio |
+| D8 | D8 | radio enable. Held low by a 10k resistor, so uploads still work. |
+
+So the shield does not have to sit on the Uno at all. Lay it on the bench, connect
+those six pins with **female-to-male jumper wires** (the female end pushes onto the
+shield's downward pins, the male end goes into the Uno's header), and every other
+Arduino pin stays free for sensors and the display. Straight through, not crossed:
+D0 to D0, D1 to D1.
+
+Two practical notes.
+
+The shield will not plug into a breadboard. Its two pin rows are about 48 mm apart
+and a breadboard only spans about 23 mm across its terminal strips, and the Uno R3
+layout offsets the D8 row by half a pitch so it cannot align to the grid anyway. It
+does not need to: the jumper wires do the job.
+
+If you only have male-to-male jumpers, there is a second route. Look closely at the
+shield and you will see a spare empty hole about 2.5 mm inboard of every header pin.
+Those are on the same nets, and are what the datasheet means by "Veroboard friendly
+top layout". A male jumper pin pushed into one is a loose friction fit rather than a
+proper connection, so tape the shield down and do not knock it, but it works for a
+bench test.
+
+This unblocks the two-gate build without waiting for the stackable headers. The
+headers are still the right answer for the finished product, because a soldered
+socket will not fall out on a windy track.
+
 
 Then:
 
