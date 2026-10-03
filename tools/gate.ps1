@@ -22,6 +22,8 @@ $Send = ($Send -join ",") -split "," | Where-Object { $_ -ne "" }
 $p = New-Object System.IO.Ports.SerialPort $Port, 115200, 'None', 8, 'One'
 $p.DtrEnable = $true; $p.ReadTimeout = 250; $p.NewLine = "`n"
 $p.Open()
+Start-Sleep -Milliseconds 200
+$p.DiscardInBuffer()          # drop anything buffered from before we connected
 try {
   # Wait for the board to finish booting (it prints "h   this help" at the end of setup).
   $deadline = (Get-Date).AddMilliseconds($BootWaitMs); $booted = $false

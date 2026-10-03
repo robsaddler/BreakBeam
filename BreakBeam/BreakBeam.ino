@@ -88,7 +88,7 @@ static const uint8_t       LINK_LOST_AFTER  = 5;      // consecutive missed poll
 enum Role : uint8_t { ROLE_UNSET = 0, ROLE_START = 1, ROLE_FINISH = 2, ROLE_SOLO = 3 };
 enum DispType : uint8_t { DISP_NONE = 0, DISP_LCD = 1, DISP_I2CLCD = 2, DISP_TM1637 = 3, DISP_MAX7219 = 4 };
 
-static const int     EE_MAGIC_ADDR = 0, EE_ROLE_ADDR = 1, EE_DISP_ADDR = 2;
+static const int     EE_MAGIC_ADDR = 0, EE_ROLE_ADDR = 1, EE_DISP_ADDR = 2, EE_LAP_ADDR = 3;
 static const uint8_t EE_MAGIC      = 0xB4;
 Role     role = ROLE_UNSET;
 DispType disp = DISP_NONE;
@@ -204,10 +204,15 @@ void pNibble(uint8_t n, bool rs) {
 }
 void pCmd(uint8_t c)  { pNibble(c >> 4, false); pNibble(c & 0x0F, false); }
 void pChar(uint8_t c) { pNibble(c >> 4, true);  pNibble(c & 0x0F, true); }
-void pLcdInit() {
-  const uint8_t pins[] = { LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7 };
-  for (uint8_t i = 0; i < 6; i++) { pinMode(pins[i], OUTPUT); digitalWrite(pins[i], LOW); }
-  delay(50);
+// full = a cold start: claim the pins, wait for the module to power up, clear the
+// screen. Anything else is a re-assert of the settings on a display that is already
+// running, which costs about 6 ms and is how a garbled screen puts itself right.
+void pLcdInit(bool full) {
+  if (full) {
+    const uint8_t pins[] = { LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7 };
+    for (uint8_t i = 0; i < 6; i++) { pinMode(pins[i], OUTPUT); digitalWrite(pins[i], LOW); }
+    delay(50);
+  }
   pNibble(0x03, false); delay(5);
   pNibble(0x03, false); delayMicroseconds(200);
   pNibble(0x03, false); delayMicroseconds(200);
@@ -215,7 +220,7 @@ void pLcdInit() {
   pCmd(0x28);   // 2 lines, 5x8 font
   pCmd(0x0C);   // display on, cursor off
   pCmd(0x06);   // entry mode: advance right
-  pCmd(0x01); delay(3);
+  if (full) { pCmd(0x01); delay(3); }
 }
 void pLine(uint8_t row, const char* s) {
   pCmd(row ? 0xC0 : 0x80);
@@ -269,13 +274,27 @@ void dispInit() {
   switch (disp) {
     case DISP_TM1637:  tmInit(); break;
     case DISP_MAX7219: mxInit(); break;
-    case DISP_LCD:     pLcdInit(); break;
+    case DISP_LCD:     pLcdInit(true); break;
     case DISP_I2CLCD:  i2cLcdInit(); break;
     default: break;
   }
 }
+// A display that has lost its settings prints nonsense and never recovers on its
+// own, so re-assert them periodically. This rides along with a full redraw, which
+// only happens on a state change and always after the timestamp that matters has
+// already been taken, so the few milliseconds cost nothing.
+unsigned long lastLcdKeepAliveMs = 0;
+void lcdKeepAlive() {
+  if (disp != DISP_LCD) return;
+  unsigned long now = millis();
+  if (now - lastLcdKeepAliveMs < 2000) return;
+  lastLcdKeepAliveMs = now;
+  pLcdInit(false);
+}
+
 // Line 1 on an LCD; ignored by the 4-digit displays.
 void dispTitle(const char* s) {
+  lcdKeepAlive();
   if (disp == DISP_LCD)    pLine(0, s);
   if (disp == DISP_I2CLCD) i2cLine(0, s);
 }
@@ -315,6 +334,47 @@ void dispDashes(const char* lcdText) {
     case DISP_I2CLCD:  i2cLine(1, lcdText); break;
     default: break;
   }
+}
+
+// While the clock runs we repaint only the digits, not the whole line. A full
+// 16-character line takes about a millisecond, and the main loop is blocked for
+// that long, which would blunt the timing of a beam break landing in the middle
+// of it. Five characters is a fifth of the cost.
+void dispTimeLive(unsigned long us) {
+  char txt[8]; timeText(us, txt);
+  switch (disp) {
+    case DISP_LCD:    pCmd(0xC0);  for (uint8_t i = 0; txt[i]; i++) pChar((uint8_t)txt[i]);  break;
+    case DISP_I2CLCD: i2cCmd(0xC0); for (uint8_t i = 0; txt[i]; i++) i2cChar((uint8_t)txt[i]); break;
+    default:          dispTime(us); break;    // the 4-digit modules are cheap to rewrite whole
+  }
+}
+// While nothing is being timed the screen doubles as an alignment aid: it says
+// whether the beam is landing, and when it is not it shows the live light level
+// against the level needed, so the laser can be walked onto the sensor without a PC.
+bool holdingResult = false;      // a finished time is on screen; do not overwrite it
+unsigned long beamGoneSinceMs = 0;
+static const unsigned long BEAM_GONE_GRACE_MS = 1500;  // a hand passing through is not a lost beam
+int  lastShownBucket = -1;
+int  lastShownPresent = -1;
+void dispArmed(bool present, int reading) {
+  int bucket = reading / 10;
+  if ((int)present == lastShownPresent && bucket == lastShownBucket) return;
+  lastShownPresent = (int)present; lastShownBucket = bucket;
+  if (present) { dispTitle("BreakBeam"); dispDashes("ready"); }
+  else {
+    char b[17];
+    snprintf(b, sizeof(b), "%d of %d", reading, BEAM_MIN_LEVEL);
+    dispTitle("Aim the laser"); dispDashes(b);
+  }
+}
+
+unsigned long lastLiveMs = 0;
+static const unsigned long LIVE_EVERY_MS = 50;   // 20 updates a second: the hundredths visibly race
+void liveClockTick(bool running, unsigned long startUs, unsigned long nowMs) {
+  if (!running) { lastLiveMs = nowMs; return; }
+  if (nowMs - lastLiveMs < LIVE_EVERY_MS) return;
+  lastLiveMs = nowMs;
+  dispTimeLive(micros() - startUs);
 }
 
 // ================================================================ BEAM SENSOR
@@ -357,7 +417,10 @@ public:
     bool triggered = false;
 
     if (!blocked) {
-      if (reading < baseline() - dropNeeded()) {
+      // Only a beam that is actually present can be broken. Without this test an
+      // unconnected pin, which drifts and mirrors its neighbour, fires phantom
+      // breaks and stops the clock the instant it starts.
+      if (baseline() >= BEAM_MIN_LEVEL && reading < baseline() - dropNeeded()) {
         blocked = true;
         blockedSinceMs = nowMs;
         bool lockedOut = hasEvent && (nowMs - lastTriggerMs) < LOCKOUT_MS;
@@ -525,9 +588,9 @@ void reportRun(unsigned long elapsed, const char* note) {
   if (note) { Serial.print(F("   ")); Serial.print(note); }
   Serial.println(F(" ==="));
   Serial.print(F("CSV,")); Serial.print(runNumber); Serial.print(','); printSeconds(elapsed); Serial.println();
-  char t[8]; timeText(elapsed, t);
   char title[17]; snprintf(title, sizeof(title), "Run %u", runNumber);
   dispTitle(title); dispTime(elapsed);
+  holdingResult = true; lastShownBucket = -1; lastShownPresent = -1;
   beep(2000, 120); delay(150); beep(2600, 200);
 }
 
@@ -541,11 +604,17 @@ void armSolo() {
   state = ARMED;
   Serial.println(lapMode ? F("[ARMED] LAP mode: break the START beam to begin.")
                          : F("[ARMED] waiting for the START beam (A0)..."));
-  dispTitle("BreakBeam"); dispDashes("ready");
+  lastShownBucket = -1; lastShownPresent = -1;
 }
 void handleLap(unsigned long nowUs) {
-  if (!lapArmed) { lapArmed = true; lapStartUs = nowUs; Serial.println(F("LAP: clock started")); dispTitle("Lap running"); dispDashes("running..."); beep(1200, 60); }
-  else { reportRun(nowUs - lapStartUs, "lap"); lapStartUs = nowUs; }
+  if (!lapArmed) { lapArmed = true; lapStartUs = nowUs; Serial.println(F("LAP: clock started - break the beam again to stop it")); holdingResult = false; dispTitle("Lap running"); dispTime(0); beep(1200, 60); }
+  else {
+    // Second break stops the clock and LEAVES the result on screen. Restarting
+    // straight away, as this used to, wiped the time after a single frame and
+    // there was no way to read it. The next break begins a fresh lap.
+    reportRun(nowUs - lapStartUs, "lap");
+    lapArmed = false;
+  }
 }
 void soloLoop() {
   unsigned long nowMs = millis();
@@ -561,7 +630,7 @@ void soloLoop() {
       case COOLDOWN:
         tStartUs = beamA.lastTriggerUs; state = RUNNING; runStartMs = nowMs;
         Serial.println(F("START! clock running"));
-        dispTitle("Running"); dispDashes("running...");
+        holdingResult = false; dispTitle("Running"); dispTime(0);
         break;
       case RUNNING:
         tStartUs = beamA.lastTriggerUs; runStartMs = nowMs;
@@ -581,9 +650,28 @@ void soloLoop() {
     }
   }
 
+  bool clockRunning = lapMode ? lapArmed : (state == RUNNING);
+  liveClockTick(clockRunning, lapMode ? lapStartUs : tStartUs, nowMs);
+  // A lost beam wins the screen over a held result, but only once it has been gone
+  // for a moment. Without the grace period the hand that stopped the clock is still
+  // in the beam when the result is written, and wipes it instantly.
+  if (!clockRunning) {
+    bool present = beamA.beamPresent();
+    if (present) beamGoneSinceMs = 0;
+    else if (beamGoneSinceMs == 0) beamGoneSinceMs = nowMs;
+    bool longGone = !present && (nowMs - beamGoneSinceMs > BEAM_GONE_GRACE_MS);
+    if (longGone) holdingResult = false;
+    if (!holdingResult) dispArmed(present, beamA.reading);
+  }
+
   if (readLine() && lineBuf[0] && lineBuf[0] != '@') {
     if      (!strcmp(lineBuf, "r")) { lapArmed = false; armSolo(); }
-    else if (!strcmp(lineBuf, "l")) { lapMode = !lapMode; lapArmed = false; Serial.println(lapMode ? F("LAP mode ON: one beam (A0) only, timed between breaks") : F("LAP mode OFF: A0 starts, A1 stops")); armSolo(); }
+    else if (!strcmp(lineBuf, "l")) {
+      lapMode = !lapMode; lapArmed = false;
+      EEPROM.update(EE_LAP_ADDR, lapMode ? 1 : 0);   // sticky, so a reset does not lose it
+      Serial.println(lapMode ? F("LAP mode ON: one beam (A0) only, timed between breaks") : F("LAP mode OFF: A0 starts, A1 stops"));
+      armSolo();
+    }
     else handleCommonCommand(lineBuf);
   }
 
@@ -629,7 +717,7 @@ unsigned long tPollSentUs = 0, pollSentMs = 0, nextPollMs = 0;
 unsigned long lastRttUs = 0, bestRttUs = 0;
 char          lastSeenEvt = '-', slaveStatus = '?';
 
-void armFinish() { state = ARMED; pendingFinish = false; Serial.println(F("[ARMED] waiting for the START beam...")); dispTitle("BreakBeam"); dispDashes("ready"); }
+void armFinish() { state = ARMED; pendingFinish = false; Serial.println(F("[ARMED] waiting for the START beam...")); lastShownBucket = -1; lastShownPresent = -1; }
 void sendPoll() {
   pollSeq = (pollSeq + 1) & 0x0F;
   char out[13];
@@ -675,7 +763,7 @@ void handleReply() {
     if (++syncSamples >= SYNC_SAMPLES) {
       state = RUNNING; runStartMs = millis();
       Serial.print(F("START! clock running (sync +/-")); Serial.print((bestRttUs / 2 + 500) / 1000); Serial.println(F(" ms)"));
-      dispTitle("Running"); dispDashes("running...");
+      holdingResult = false; dispTitle("Running"); dispTime(0);
       beep(1200, 60);
       if (pendingFinish) finalizeRun();
     }
@@ -702,9 +790,24 @@ void finishGateLoop() {
     if (lineBuf[0] == '@') { if (lineBuf[1] == 'R') handleReply(); }
     else if (lineBuf[0]) {
       if      (!strcmp(lineBuf, "r")) { linkUp = false; seenSlaveOnce = false; lapArmed = false; armFinish(); }
-      else if (!strcmp(lineBuf, "l")) { lapMode = !lapMode; lapArmed = false; Serial.println(lapMode ? F("LAP mode ON: this gate's own beam, timed between breaks") : F("LAP mode OFF")); }
+      else if (!strcmp(lineBuf, "l")) {
+        lapMode = !lapMode; lapArmed = false;
+        EEPROM.update(EE_LAP_ADDR, lapMode ? 1 : 0);   // sticky, so a reset does not lose it
+        Serial.println(lapMode ? F("LAP mode ON: this gate's own beam, timed between breaks") : F("LAP mode OFF"));
+      }
       else handleCommonCommand(lineBuf);
     }
+  }
+
+  bool clockRunning2 = lapMode ? lapArmed : (state == RUNNING);
+  liveClockTick(clockRunning2, lapMode ? lapStartUs : tStartUs, nowMs);
+  if (!clockRunning2) {
+    bool present = beamA.beamPresent();
+    if (present) beamGoneSinceMs = 0;
+    else if (beamGoneSinceMs == 0) beamGoneSinceMs = nowMs;
+    bool longGone = !present && (nowMs - beamGoneSinceMs > BEAM_GONE_GRACE_MS);
+    if (longGone) holdingResult = false;
+    if (!holdingResult) dispArmed(present, beamA.reading);
   }
 
   if (awaitingReply && nowMs - pollSentMs > POLL_TIMEOUT_MS) {
@@ -739,10 +842,12 @@ void setup() {
   Serial.begin(SERIAL_BAUD);
   delay(300);
   loadSettings();
+  if (EEPROM.read(EE_MAGIC_ADDR) == EE_MAGIC) lapMode = (EEPROM.read(EE_LAP_ADDR) == 1);
   Serial.println();
   Serial.println(F("================ BreakBeam speed gate ================"));
   Serial.print(F("Role: "));    Serial.println(roleName(role));
   Serial.print(F("Display: ")); Serial.println(dispName(disp));
+  if (lapMode) Serial.println(F("LAP mode is ON (one beam, timed between breaks)"));
   if (role == ROLE_UNSET) Serial.println(F(">>> Type  role solo  (both beams, one board)  or  role start  or  role finish"));
 
   if (role == ROLE_START || role == ROLE_FINISH) {

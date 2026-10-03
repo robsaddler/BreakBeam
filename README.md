@@ -31,9 +31,9 @@ breaks it subtracts the two. No clock sync, no drift problem.
 | `role solo` | Both beams on this one board (A0 starts, A1 stops). No radio or shield needed. |
 | `role start` / `role finish` | Set this board's job for radio operation. Saved to EEPROM, board reboots. |
 | `display none\|lcd\|i2clcd\|tm1637\|max7219` | Which display is wired up. Remembered. |
-| `t` | Send 12.34 to the display to check its wiring. |
+| `t` | Re-initialise the display and show 12.34. Fixes a garbled screen. |
 | `a` | Align mode: live sensor numbers 5x a second. Use while pointing the laser. |
-| `l` | Lap mode: time between two breaks of the start beam alone. Works with a single LDR. |
+| `l` | Lap mode: time between two breaks of the start beam alone. Works with a single sensor, and is remembered across resets. |
 | `r` | Re-arm. |
 | `s` | Buzzer on/off. |
 | `h` | Help. |

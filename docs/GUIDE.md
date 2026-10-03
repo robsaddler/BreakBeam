@@ -494,19 +494,50 @@ straight in. Shade the sensor, or swap the 10 kohm for 1 kohm.
 4. Put a finger in the beam. The L light goes out.
 5. Type `a` again to stop the numbers.
 
+### What the display tells you
+
+Once a display is wired, the board can be used without a PC at all.
+
+**Waiting, beam not landing.** The screen becomes an alignment aid. The first number
+is what the sensor sees right now, the second is what it needs:
+
+```
+Aim the laser
+268 of 300
+```
+
+Move the light until the first number climbs past the second. Properly aimed, a
+TEPT5700 with a red laser on it reads about 1000.
+
+**Waiting, beam landing.** `BreakBeam` over `ready`. That is the green light.
+
+**Timing.** The clock counts up twenty times a second, so the hundredths visibly race.
+
+**Finished.** The time stays on screen until the next run starts. A hand passing
+through the beam does not wipe it; only the beam going genuinely missing, for more
+than a second and a half, switches back to the aim screen.
+
 ### Stage 6: get a time
 
 1. Type `l` and press Enter for lap mode.
-2. Wave your hand through the beam. The serial monitor says the clock started.
-3. Wave again. You get a time, on screen and on the LCD:
+2. Wave your hand through the beam. The clock starts and the LCD counts up.
+3. Wave again. The clock stops and the time stays on screen:
 
    ```
    === RUN 1   TIME 2.318 s ===
    CSV,1,2.318
    ```
 
-4. Time a few against a phone stopwatch. They should agree to about a tenth, which is
+4. A third wave starts a fresh lap. There is an 0.8 second lockout after each break,
+   so your hand leaving the beam cannot count as the next one.
+5. Time a few against a phone stopwatch. They should agree to about a tenth, which is
    your reaction time rather than any error in the gate.
+
+**A laser is not required for this stage.** Aiming a 3 mm dot onto a 5 mm sensor by
+hand is the fiddliest thing in this whole project, and it has nothing to do with the
+timing. A desk lamp or a phone torch held 5 to 10 cm away gives a huge, steady reading
+and needs no aiming at all, and your hand passing in front of it breaks the beam just
+the same. Save the laser for when the parts are mounted and cannot drift.
 
 **Pass:** the laser on the sensor lights the L light, and two waves give a time on the
 LCD.
