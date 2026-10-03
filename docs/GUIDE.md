@@ -391,10 +391,33 @@ The LCD has pins called D4 to D7 and the Arduino has pins called D2 to D5. They 
 different things that happen to share a naming style. Follow the table and the numbers
 climb together, which makes it hard to get wrong.
 
-**Contrast, LCD pin 3 (VO).** If you have a small potentiometer, push it into three
-rows, run its middle leg to LCD pin 3, one outer leg to the **+** rail and the other
-to the **-** rail. With no potentiometer, run a 1 kohm resistor from LCD pin 3 to the
-**-** rail instead, which gives a fixed and usually readable contrast.
+**The contrast and the backlight are two separate circuits.** They sit next to each
+other in the table above, which makes it easy to wire one into the other. The pot has
+nothing to do with the backlight, and the 330 ohm has nothing to do with the contrast.
+
+```
+CONTRAST  -  the pot, three legs, and nothing else
+   + rail  --- one outer leg
+               MIDDLE leg --- LCD pin 3
+   - rail  --- other outer leg
+
+BACKLIGHT  -  nothing to do with the pot
+   + rail  --- [ 330 ohm ] --- LCD pin 15
+   - rail  ---------------------  LCD pin 16
+```
+
+Both outer legs of the pot must reach the rails, one to **+** and one to **-**, so the
+middle leg can slide between 0 V and 5 V. Running LCD pin 15 to a pot leg instead feeds
+the backlight through the pot's whole track, which passes so little current that the
+screen stays dark and pin 15 measures almost 0 V.
+
+With no potentiometer, run a 1 kohm resistor from LCD pin 3 to the **-** rail instead,
+or even wire pin 3 straight to the **-** rail, which is maximum contrast and usually
+readable.
+
+**A note on pot values.** Most kits ship a 10 kohm pot. A larger one such as 50 kohm
+still works, but it squeezes the whole useful range into a sliver of rotation close to
+the **-** end, so turn it slowly and all the way before deciding it does nothing.
 
 ### Stage 3: the light sensor
 
@@ -758,6 +781,9 @@ Once Phase 3 passes, in this order:
 | Times look about right but jittery by 10+ ms | Slow LDR, or a laser dot only half on the LDR | Centre the dot; upgrade to phototransistor. |
 | Uploading fails: "not in sync" | Another program (serial monitor, gate.ps1) has the port open | Close it, retry. Shields do not need removing. |
 | Commands typed in the first 5 s after reset are ignored | Radio self-test is running | Wait for the help text, type again. |
+| LCD completely dark, no backlight | Backlight not fed, or fed through the pot | Measure LCD pin 15: it should be 3 to 5 V. Near 0 V means the 330 ohm is not bridging a + rail hole to pin 15's row, or pin 15 has been wired to a pot leg. |
+| LCD lights but shows nothing | Contrast | Sweep the pot slowly end to end. With a 50 kohm pot the readable band is close to the - end. Or wire pin 3 straight to the - rail. |
+| LCD shows gibberish characters | The four data wires are in the wrong order, RW is not grounded, or RS and E are swapped | LCD pins 11, 12, 13, 14 go to Arduino D2, D3, D4, D5, climbing together. LCD pin 5 (RW) must be firmly in the - rail. LCD pin 4 to D12 and pin 6 to D11. |
 | Gates print each other's messages, or garbage fragments | Normal: the radio and USB share one serial line, and lost packets leave fragments | Harmless. Only lines starting with `@` are protocol; everything else is chatter. |
 
 ---

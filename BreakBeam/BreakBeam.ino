@@ -495,7 +495,7 @@ bool setDisplay(const char* name) {
   else return false;
   disp = d; saveDisp(d); dispInit();
   Serial.print(F("Display set to ")); Serial.println(dispName(disp));
-  dispTitle("BreakBeam"); dispTime(1234000UL);
+  dispTitle("BreakBeam"); dispTime(12340000UL);
   return true;
 }
 // Returns true if the line was handled. Never prints "unknown": on a shared
@@ -507,7 +507,7 @@ bool handleCommonCommand(const char* line) {
   if (!strncmp(line, "display ", 8)) return setDisplay(line + 8);
   if (!strcmp(line, "a")) { alignMode = !alignMode; Serial.println(alignMode ? F("ALIGN mode ON") : F("ALIGN mode OFF")); return true; }
   if (!strcmp(line, "s")) { soundOn = !soundOn;     Serial.println(soundOn ? F("Buzzer ON") : F("Buzzer OFF")); return true; }
-  if (!strcmp(line, "t")) { dispTitle("BreakBeam"); dispTime(1234000UL); Serial.print(F("Sent 12.34 to display: ")); Serial.println(dispName(disp)); return true; }
+  if (!strcmp(line, "t")) { dispTitle("BreakBeam"); dispTime(12340000UL); Serial.print(F("Sent 12.34 to display: ")); Serial.println(dispName(disp)); return true; }
   if (!strcmp(line, "h") || !strcmp(line, "?")) { printHelp(); return true; }
   return false;
 }
