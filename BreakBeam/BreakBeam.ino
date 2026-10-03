@@ -38,8 +38,8 @@
         (more light = bigger number. A phototransistor drops in the same way:
          long leg to 5V, short leg to A0, 10k from A0 to GND.)
     A1  FINISH beam sensor, wired identically. Solo role only.
-    D7  LED via 220R to GND: lit when the START beam is landing. D13 copies it.
-    D6  LED via 220R to GND: lit when the FINISH beam is landing. Solo role only.
+    D7  LED via 330R to GND: lit when the START beam is landing. D13 copies it.
+    D6  LED via 330R to GND: lit when the FINISH beam is landing. Solo role only.
     D9  piezo buzzer: + to D9, - to GND.
     D8  radio enable. Used by the shield. Connect nothing.
 
@@ -48,7 +48,7 @@
     lcd      16x2 LCD, the 16-pin one (e.g. 1602A). Straight through, no crossover:
              LCD RS->D12, E->D11, D4->D2, D5->D3, D6->D4, D7->D5, RW->GND.
              Plus VSS->GND, VDD->5V, VO->contrast pot (or 1k to GND),
-             A->5V via 220R, K->GND. LCD pins D0-D3 are left unconnected.
+             A->5V via 330R, K->GND. LCD pins D0-D3 are left unconnected.
     i2clcd   16x2 LCD with an I2C backpack soldered on the back (4 pins).
              SDA=A4  SCL=A5  plus 5V and GND. Address 0x27 or 0x3F, found for you.
     tm1637   4-digit "clock" module, 4 pins. CLK=D2  DIO=D3  plus 5V and GND.

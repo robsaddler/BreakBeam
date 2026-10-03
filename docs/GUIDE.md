@@ -71,13 +71,21 @@ coloured bands around the body rather than as a number, so:
 
 | Value | Bands to look for |
 |---|---|
-| 220 Ω | red, red, brown |
+| 150 Ω | brown, green, brown |
+| 330 Ω | orange, orange, brown |
+| 470 Ω | yellow, violet, brown |
 | 1 kΩ (1000 Ω) | brown, black, red |
+| 4.7 kΩ | yellow, violet, red |
 | 10 kΩ (10,000 Ω) | brown, black, orange |
 
 Read the bands from the end that has them grouped closest together. The lone gold or
 silver band at the other end is the tolerance and you can ignore it. A resistor has no
 right way round.
+
+**How close do you have to get?** For the two jobs in this build that just limit
+current, lighting the display's backlight and lighting an indicator LED, anything from
+about 150 to 470 ohm is fine. A smaller value means brighter, a larger one dimmer.
+Only the sensor's 10 kohm actually sets behaviour, and even that is adjustable.
 
 **Polarity** means a component cares which way round it goes. A resistor and an LDR do
 not. An LED, a buzzer and a phototransistor do, and putting them in backwards means
@@ -231,7 +239,7 @@ work fine for this. Three rules, and they are not optional:
 | TEPT5700 phototransistor | The new ones. Clear 5 mm body, two legs of **different lengths** | 1 |
 | LDR | Small orange disc. Keep one to hand as a fallback only | 1 |
 | 10 kohm resistor | Bands brown, black, orange | 1 |
-| 220 ohm resistor | Bands red, red, brown | 1 |
+| 330 ohm resistor | Bands orange, orange, brown. Anything from 150 to 470 ohm works here | 1 |
 | LCD | The **1602A**, the one that already has a black 16-pin strip soldered on. Not the big 2004A. | 1 |
 | Contrast control | A small potentiometer if you have one, otherwise a 1 kohm resistor (brown, black, red) | 1 |
 | Jumper wires | Male to male | about 12 |
@@ -287,7 +295,7 @@ Now run these wires. The row you work from is whichever row that LCD pin landed 
 | 12 | D5 | Arduino **D3** |
 | 13 | D6 | Arduino **D4** |
 | 14 | D7 | Arduino **D5** |
-| 15 | A | one leg of the 220 ohm resistor, its other leg to the **+** rail |
+| 15 | A | one leg of the 330 ohm resistor, its other leg to the **+** rail |
 | 16 | K | **-** rail |
 
 The LCD has pins called D4 to D7 and the Arduino has pins called D2 to D5. They are
@@ -334,7 +342,7 @@ sits low and barely reacts to light. Turn it round and carry on.
    line and **12.34 s** underneath.
 6. Nothing on the LCD, or just a row of solid blocks? Turn the potentiometer slowly
    from one end to the other. There is a narrow band where the text appears. If you
-   used the fixed resistor, try a smaller one, down to 220 ohm.
+   used the fixed resistor, try a smaller one, down to 330 ohm.
 7. Type `t` at any time to send 12.34 to the display again.
 
 ### Stage 5: the beam
@@ -389,11 +397,11 @@ multimeter on resistance across the two legs:
 | Reading | What it is | What to do |
 |---|---|---|
 | Open circuit, or megohms | Passive piezo | Perfect. Use this one. |
-| 15 to 50 ohm | Passive electromagnetic | Usable, but put 220 ohm in series or it pulls too much current from the pin. |
+| 15 to 50 ohm | Passive electromagnetic | Usable, but put 330 ohm in series or it pulls too much current from the pin. |
 | A few hundred ohm to a few kohm | Active, with its own oscillator | It only makes one fixed pitch. Fine as a beeper, but it ignores the tune. |
 
-Wire the chosen one with its **+** leg through a 220 ohm resistor to Arduino **D9**,
-and its other leg to the **-** rail. The 220 ohm is harmless with a piezo and protects
+Wire the chosen one with its **+** leg through a 330 ohm resistor to Arduino **D9**,
+and its other leg to the **-** rail. The 330 ohm is harmless with a piezo and protects
 the pin with the others.
 
 **If the phototransistor misbehaves**, the LDR is the fallback. It drops into the same
@@ -457,8 +465,8 @@ The near sensor is the Phase 2 circuit unchanged, but on **A1** instead of A0.
 | GND | breadboard − rail |
 | A0 | far sensor head, middle of its divider (via the long cable) |
 | A1 | near sensor, middle of its divider |
-| D7 | 220 Ω to an LED, LED short leg to − rail. Lit when the START beam lands. |
-| D6 | 220 Ω to a second LED, short leg to − rail. Lit when the FINISH beam lands. |
+| D7 | 330 Ω to an LED, LED short leg to − rail. Lit when the START beam lands. |
+| D6 | 330 Ω to a second LED, short leg to − rail. Lit when the FINISH beam lands. |
 | D9 | buzzer +, buzzer − to − rail |
 
 A second LED is worth wiring: one LED per beam means you can see both are aligned
