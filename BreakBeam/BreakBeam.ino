@@ -507,6 +507,14 @@ void radioSelfTest() {
   Serial.println(F("Radio: NO ANSWER. Is the SRF shield fitted? (Beam sensing still works.)"));
 }
 
+// Elapsed-time test that survives a start stamped slightly AFTER the loop took its
+// own clock, which happens whenever a radio reply lands mid-iteration. Plain
+// unsigned subtraction wraps to about four billion there, so every timeout fires
+// at once and a run is abandoned on the very tick it starts.
+bool elapsed(unsigned long now, unsigned long since, unsigned long ms) {
+  return (long)(now - since) >= (long)ms;
+}
+
 // ---------------------------------------------------------------- misc helpers
 void printSeconds(unsigned long us) {
   unsigned long ms = (us + 500) / 1000;
@@ -684,9 +692,9 @@ void soloLoop() {
     else handleCommonCommand(lineBuf);
   }
 
-  if (state == RUNNING && nowMs - runStartMs > RUN_TIMEOUT_MS) { Serial.println(F("No finish within 60 s - run abandoned.")); armSolo(); }
-  if (state == COOLDOWN && nowMs - cooldownStartMs > COOLDOWN_MS) armSolo();
-  if (!alignMode && (state == ARMED || state == COOLDOWN) && nowMs - lastStatusMs >= STATUS_EVERY_MS) {
+  if (state == RUNNING && elapsed(nowMs, runStartMs, RUN_TIMEOUT_MS)) { Serial.println(F("No finish within 60 s - run abandoned.")); armSolo(); }
+  if (state == COOLDOWN && elapsed(nowMs, cooldownStartMs, COOLDOWN_MS)) armSolo();
+  if (!alignMode && (state == ARMED || state == COOLDOWN) && elapsed(nowMs, lastStatusMs, STATUS_EVERY_MS)) {
     lastStatusMs = nowMs;
     Serial.print(state == ARMED ? F("[ARMED] ") : F("[COOLDOWN] "));
     Serial.print(F("START beam: ")); Serial.print(beamA.stateText()); Serial.print(F(" (A0=")); Serial.print(beamA.reading); Serial.print(')');
@@ -815,7 +823,7 @@ void finishGateLoop() {
     if (!holdingResult) dispArmed(present, beamA.reading);
   }
 
-  if (awaitingReply && nowMs - pollSentMs > POLL_TIMEOUT_MS) {
+  if (awaitingReply && elapsed(nowMs, pollSentMs, POLL_TIMEOUT_MS)) {
     awaitingReply = false;
     if (missedPolls < 255) missedPolls++;
     if (linkUp && missedPolls >= LINK_LOST_AFTER) { linkUp = false; seenSlaveOnce = false; Serial.println(F("Radio link DOWN (no reply from the START gate)")); }
@@ -825,9 +833,9 @@ void finishGateLoop() {
     if (nowMs - nextPollMs >= interval) { nextPollMs = nowMs; sendPoll(); }
   }
 
-  if ((state == RUNNING || state == SYNCING) && nowMs - runStartMs > RUN_TIMEOUT_MS) { Serial.println(F("No finish within 60 s - run abandoned.")); armFinish(); }
-  if (state == COOLDOWN && nowMs - cooldownStartMs > COOLDOWN_MS) armFinish();
-  if (!awaitingReply && !alignMode && (state == ARMED || state == COOLDOWN) && nowMs - lastStatusMs >= STATUS_EVERY_MS) {
+  if ((state == RUNNING || state == SYNCING) && elapsed(nowMs, runStartMs, RUN_TIMEOUT_MS)) { Serial.println(F("No finish within 60 s - run abandoned.")); armFinish(); }
+  if (state == COOLDOWN && elapsed(nowMs, cooldownStartMs, COOLDOWN_MS)) armFinish();
+  if (!awaitingReply && !alignMode && (state == ARMED || state == COOLDOWN) && elapsed(nowMs, lastStatusMs, STATUS_EVERY_MS)) {
     lastStatusMs = nowMs;
     Serial.print(state == ARMED ? F("[ARMED] ") : F("[COOLDOWN] "));
     Serial.print(F("link "));
