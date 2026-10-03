@@ -127,6 +127,85 @@ PC. Same idea, different word, because it lives inside a device.
 
 ---
 
+## Using the multimeter
+
+A meter turns "I think that wire is connected" into "that wire is connected". Worth
+ten minutes to learn, because it finds in seconds what guessing finds in an hour.
+
+These notes are written for a VC99+, but any cheap meter works the same way.
+
+### Setting it up for voltage
+
+Leads first, and for everything in this guide they never move:
+
+- **Black** lead into the socket marked **COM**.
+- **Red** lead into the socket marked **VΩHz**.
+
+Never put the red lead into the **A** or **mA** sockets while measuring voltage. Those
+are deliberately near-zero resistance, so across a power supply they are a short
+circuit. They are only for measuring current, which this project never needs.
+
+Then turn the dial to **V** with a solid line and a dashed line under it, which means
+DC volts. On a VC99 that is one click clockwise from OFF. Do not use **V~** beside it,
+which is AC. The meter ranges itself, so there is nothing else to set.
+
+### Probe tips do not fit breadboard holes
+
+A probe tip is about 2 mm across and a breadboard hole takes a 0.6 mm pin. The tip will
+not reach the metal clip inside, so you get a false reading of zero, and forcing it
+splays the clip and ruins that row for good.
+
+**Use a jumper wire as a test point.** Push a spare male-to-male jumper into a free hole
+in the row you want to measure and leave its other end standing in the air. Touch the
+probe to that free pin. It is electrically the same point and it gives you something
+big enough to hit. Taping the jumper to the probe makes a usable extended tip.
+
+The Arduino's own black sockets have exactly the same problem, so measure them the same
+way: a jumper into the socket, probe onto its free end.
+
+If the kit has crocodile clip leads, clip one onto the ground jumper. That gives you a
+hands-free black probe and leaves a hand spare for turning a potentiometer.
+
+### Measuring a voltage
+
+Voltage is always a measurement *between two points*, never at one point on its own. In
+practice one of those points is nearly always ground, so:
+
+1. Power the circuit up. Voltage readings need the power **on**.
+2. Park the **black** probe on the **−** rail and leave it there for the whole session.
+3. Move the **red** probe to each point you want to know about.
+
+The number you read is how far above ground that point sits.
+
+### Measuring resistance and continuity
+
+The opposite rule applies: resistance and continuity need the power **off**. Unplug the
+USB first. Measuring resistance on a live circuit gives nonsense, because the meter
+works by pushing its own tiny current through the thing and seeing what happens.
+
+Turn the dial to the **Ω** position. The same dial position usually carries continuity
+and diode testing too, cycled with the blue button, and the display shows a small
+speaker symbol when continuity is selected. Touch the probes together: a short beep
+means the meter is working.
+
+Continuity is the fastest way to answer "is this wire really in the row I think it is".
+One probe at each end, beep means yes.
+
+Resistance is how to identify the three buzzers later in this guide, and how to confirm
+a resistor's value when you cannot face reading the colour bands.
+
+### If the meter behaves oddly
+
+A blank screen, a continuous beep or wandering numbers usually means a tired battery,
+and these meters take a 9 V PP3 behind a cover on the back. Prove the meter before you
+trust it: set it to DC volts and measure a known 9 V battery across its two terminals.
+A healthy new one reads about 9.5 V.
+
+Most of these meters also switch themselves off after a few idle minutes. Click the
+dial to OFF and back to wake it.
+
+---
+
 ## Phase 0 - know your boards
 
 ### The four LEDs on an Arduino Uno
