@@ -892,6 +892,42 @@ translucent diffuser disc across the mouth. The diffuser spreads the laser dot o
 whole sensor, so aiming stops being a 3 mm target, and it makes the dot visible from
 behind, which is a genuinely useful alignment aid.
 
+### Four tripods, four boxes: the through-beam layout
+
+Each gate is a **pair** of tripods, laser on one side of the lane and sensor on the
+other. This is a through-beam gate, the same arrangement commercial timing gates use,
+and it gives the strongest and most reliable signal.
+
+It also means you build **four boxes, not two**, and they are nothing like each other:
+
+| Box | Contains | Count |
+|---|---|---|
+| Sensor box | Uno, prototype shield, radio shield, hooded sensor, battery, switch | 2, one per gate |
+| Laser box | Laser module, battery, switch. **No electronics at all.** | 2, one per gate |
+
+**The laser box needs its own power.** You cannot run a cable across the lane: that is
+a trip hazard at hip height in front of sprinting athletes. The laser module takes 2.6
+to 6 volts, so either works:
+
+- **3 x AA in a holder**, giving 4.5 V. About £2, and a very long life at roughly 30 mA.
+- **A USB power bank** with a cut-down USB lead, giving 5 V and rechargeable.
+
+The laser box is otherwise trivial: battery, switch, laser, clamp, tripod thread.
+Nothing in it can go wrong, which is worth remembering when something does.
+
+**Alignment is now the main job**, because each gate is two independent tripods rather
+than one rigid bracket. What makes it quick:
+
+1. Set both tripods to the same height and level them.
+2. Coarse aim by eye, landing the dot on the face of the sensor hood.
+3. Fine aim by watching feedback. The finish gate shows the live number on its aim
+   screen. The start gate has no display, so its **L** light is the only indicator:
+   bring that out to the case surface and make it visible from several metres.
+
+The diffuser disc across the hood mouth matters most here. It turns the target from a
+5 mm lens into the whole hood mouth, which across a two metre lane is the difference
+between fiddly and quick.
+
 ### The laser: stop using pens
 
 A taped-up laser pen inside a sealed case is not a product. Buy two **5 V laser diode
@@ -916,17 +952,20 @@ around:
 | 1602 LCD module | 80 x 36 x 13 mm, viewing window 65 x 16 mm |
 | PP3 battery | 48 x 27 x 18 mm |
 | Sensor hood | 35 mm long, 8 mm bore |
-| Laser module | 6 mm diameter, 10 mm long |
+| Laser module | 7 mm diameter, 21 mm long for the VLM-650-03; measure yours, 6 mm is also common |
+| 3 x AA battery holder | 58 x 46 x 17 mm |
 | SMA bulkhead connector | needs a 6.5 mm hole |
 | Tripod thread | 1/4 inch 20 UNC nut, captive |
 
 Five things the case has to get right:
 
-1. **The sensor and the laser must be rigidly parallel**, mounted on the same bracket.
-   Everything else is detail; this is the whole job. Aiming failed on the bench purely
-   because the pen could move relative to the sensor.
-2. **A bubble level recess on top.** Aligning two gates then becomes "level both
-   tripods at the same height", not trial and error.
+1. **Each box must hold its own aim without creeping.** With laser and sensor on
+   separate tripods, nothing you print can enforce their alignment, so what the cases
+   must do instead is stop the parts moving relative to their own tripod. A laser that
+   can rotate a degree inside its clamp loses the sensor across a two metre lane.
+2. **A bubble level recess on top of every box, including the laser boxes.** With four
+   tripods to set up, levelling all four to the same height is what turns alignment
+   from guesswork into a routine.
 3. **Keep metal away from the antenna end**, and put the SMA connector where a tripod
    head cannot shadow it.
 4. **The USB socket must stay reachable** without opening the case, for firmware
