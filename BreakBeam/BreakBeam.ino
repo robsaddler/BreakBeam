@@ -850,12 +850,14 @@ void setup() {
   if (lapMode) Serial.println(F("LAP mode is ON (one beam, timed between breaks)"));
   if (role == ROLE_UNSET) Serial.println(F(">>> Type  role solo  (both beams, one board)  or  role start  or  role finish"));
 
-  if (role == ROLE_START || role == ROLE_FINISH) {
-    pinMode(PIN_RADIO_EN, OUTPUT); digitalWrite(PIN_RADIO_EN, HIGH);   // connect the SRF radio
-    radioSelfTest();
-  } else {
-    Serial.println(F("Radio not used in this role (no shield needed)."));
-  }
+  // D8 must always be driven, never left floating. With a shield attached a floating
+  // D8 leaves its two analogue switches half open, which couples the radio onto the
+  // shared serial lines and corrupts characters in both directions.
+  bool wantRadio = (role == ROLE_START || role == ROLE_FINISH);
+  pinMode(PIN_RADIO_EN, OUTPUT);
+  digitalWrite(PIN_RADIO_EN, wantRadio ? HIGH : LOW);
+  if (wantRadio) radioSelfTest();
+  else Serial.println(F("Radio held off in this role (D8 driven low)."));
 
   dispInit();
   dispTitle("BreakBeam"); dispDashes("ready");

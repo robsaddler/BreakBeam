@@ -827,6 +827,7 @@ Once Phase 3 passes, in this order:
 | LCD lights but shows nothing | Contrast | Sweep the pot slowly end to end. With a 50 kohm pot the readable band is close to the - end. Or wire pin 3 straight to the - rail. |
 | LCD shows gibberish characters | The four data wires are in the wrong order, RW is not grounded, or RS and E are swapped | LCD pins 11, 12, 13, 14 go to Arduino D2, D3, D4, D5, climbing together. LCD pin 5 (RW) must be firmly in the - rail. LCD pin 4 to D12 and pin 6 to D11. |
 | Gates print each other's messages, or garbage fragments | Normal: the radio and USB share one serial line, and lost packets leave fragments | Harmless. Only lines starting with `@` are protocol; everything else is chatter. |
+| Mangled characters in every line, and uploads fail | The radio is driving the shared serial lines when it should be isolated | D8 must be driven, never left floating: a floating D8 leaves the shield's two analogue switches half open. The firmware now drives it low in any role that does not want the radio. If it persists, a shield wire is on the wrong pin - D0 and D1 belong on the Arduino-style header, not the separate programming group next to the radio chip, which bypasses the switches entirely. |
 
 ---
 
