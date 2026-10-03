@@ -45,9 +45,10 @@
 
   Wiring - the display (pick ONE)
   --------------------------------
-    lcd      16x2 LCD, the 16-pin one with a 10k contrast pot.
-             RS=D12  E=D11  D4=D5  D5=D4  D6=D3  D7=D2  RW=GND
-             plus 5V, GND, pot to VO, and LED+/LED- through 220R for the backlight.
+    lcd      16x2 LCD, the 16-pin one (e.g. 1602A). Straight through, no crossover:
+             LCD RS->D12, E->D11, D4->D2, D5->D3, D6->D4, D7->D5, RW->GND.
+             Plus VSS->GND, VDD->5V, VO->contrast pot (or 1k to GND),
+             A->5V via 220R, K->GND. LCD pins D0-D3 are left unconnected.
     i2clcd   16x2 LCD with an I2C backpack soldered on the back (4 pins).
              SDA=A4  SCL=A5  plus 5V and GND. Address 0x27 or 0x3F, found for you.
     tm1637   4-digit "clock" module, 4 pins. CLK=D2  DIO=D3  plus 5V and GND.
@@ -193,7 +194,7 @@ void mxInit() {
 }
 
 // ---- 16x2 LCD, 16-pin parallel (HD44780 in 4-bit mode, hand-written) -----
-static const uint8_t LCD_RS = 12, LCD_E = 11, LCD_D4 = 5, LCD_D5 = 4, LCD_D6 = 3, LCD_D7 = 2;
+static const uint8_t LCD_RS = 12, LCD_E = 11, LCD_D4 = 2, LCD_D5 = 3, LCD_D6 = 4, LCD_D7 = 5;
 void pNibble(uint8_t n, bool rs) {
   digitalWrite(LCD_RS, rs);
   digitalWrite(LCD_D4, n & 1); digitalWrite(LCD_D5, (n >> 1) & 1);

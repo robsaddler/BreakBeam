@@ -101,85 +101,179 @@ If it fails, see Troubleshooting at the bottom.
 
 ---
 
-## Phase 2 - the beam sensor, one board at a time (shield OFF)
+## Phase 2 - one board, one beam, one display (no soldering)
 
-**Goal:** a laser hitting the LDR lights the L LED, a hand through the beam gives a
-`LAP TIME`.
+**Goal:** the LCD shows a time when you wave your hand through a laser beam twice.
 
-Do this on the FINISH board first, then repeat on the START board. Take the shield off
-for this phase so you can plug jumper wires straight into the Uno's sockets.
+Everything here plugs together. Nothing is soldered. Allow about 40 minutes.
 
-### Parts from the starter kit
+### Before you start: the lasers
 
-| Part | How to recognise it | Quantity per gate |
+Your pens are marked **Class III**, one green at 532 nm and one red at 650 nm. Both
+work fine for this. Three rules, and they are not optional:
+
+- Never look into the beam or at the front end of the pen, and never point either at
+  a person or an animal.
+- Work with the beam at bench height, pointing at a wall, not across a room at head
+  height.
+- The green one is the riskier of the two, because cheap green pens are often
+  stronger than their label claims. Use the **red** one for this bench test.
+
+### Parts, all from your photos
+
+| Part | Which one | How many |
 |---|---|---|
-| LDR (light dependent resistor, "photoresistor") | Round disc, 5 mm wide, wiggly line on the face, two legs. No polarity. | 1 |
-| 10 kΩ resistor | Bands **brown, black, orange** (then gold/silver). | 1 |
-| 220 Ω resistor | Bands **red, red, brown**. | 1 |
-| LED, any colour | Long leg = **+** (anode). | 1 |
-| Piezo buzzer (optional) | Black round can, "+" printed on top or a longer leg. | 1 |
-| Breadboard | The white block with holes. | 1 |
-| Jumper wires, male-male | The bendy wires with pins on both ends. | about 6 |
+| Arduino Uno + USB cable | Either board | 1 |
+| Breadboard | The white one | 1 |
+| LDR | Small orange disc, two legs, no polarity | 1 |
+| 10 kohm resistor | Bands brown, black, orange | 1 |
+| 220 ohm resistor | Bands red, red, brown | 1 |
+| LCD | The **1602A**, the one that already has a black 16-pin strip soldered on. Not the big 2004A. | 1 |
+| Contrast control | A small potentiometer if you have one, otherwise a 1 kohm resistor (brown, black, red) | 1 |
+| Jumper wires | Male to male | about 12 |
+| Laser pen | The red 650 nm one | 1 |
 
-### How a breadboard works (30 seconds)
+Leave the buzzer, the radio shields and the phototransistors out for now. One new
+thing at a time.
 
-- The two long rows down each edge (marked **+** and **-**, red and blue lines) are
-  connected along their whole length. We use one for 5 V and one for GND.
-- In the middle, each **short row of 5 holes** (a, b, c, d, e or f, g, h, i, j) is
-  connected together. Rows are **not** connected across the central trench.
-- So: two legs pushed into the same 5-hole row are joined. Different rows are not.
+### How a breadboard works
 
-### Wiring
+Thirty seconds of theory, then you can stop thinking about it.
 
-```
-   Uno 5V  ------------------------------- breadboard + rail
-   Uno GND ------------------------------- breadboard - rail
+- The two long strips down each edge, marked **+** and **-** with a red and a blue
+  line, are each joined all the way along. These are the rails. One carries 5 V, the
+  other carries ground.
+- In the middle, each **short row of five holes** is joined to itself and to nothing
+  else. The rows are numbered down the side.
+- The channel down the middle splits the board. A row on the left of the channel is
+  **not** joined to the row on the right of it.
 
-   + rail --- [ LDR ] --- row 10 --- [ 10k ] --- - rail
-                            |
-                            +---------------------------- Uno A0
+So two legs in the same five-hole row are connected to each other, and legs in
+different rows are not. That is the whole idea.
 
-   Uno D7 --- [ 220R ] --- LED long leg   LED short leg --- - rail
+### Stage 1: power rails
 
-   Uno D9 --- buzzer +                   buzzer - --------- - rail   (optional)
-```
+**Unplug the USB cable first.** Build everything with the power off.
 
-Step by step:
+1. Jumper wire from the Uno's **5V** pin to the breadboard's **+** rail.
+2. Jumper wire from one of the Uno's **GND** pins to the **-** rail.
 
-1. Jumper from Uno **5V** to the breadboard **+** rail. Jumper from Uno **GND** to the **-** rail.
-2. LDR: one leg into the **+** rail, the other leg into **row 10** (any row, just remember it).
-3. 10 kΩ resistor: one leg into **row 10**, the other into the **-** rail.
-4. Jumper from **row 10** to Uno **A0**.
-5. LED: long leg into row 20, short leg into the **-** rail. 220 Ω resistor from row 20
-   to row 25. Jumper from row 25 to Uno **D7**.
-6. Buzzer (optional): + leg to a jumper to Uno **D9**, other leg to the **-** rail.
+The Uno has two GND pins side by side. Either one is fine.
 
-Why it works: the LDR and the 10 k resistor form a voltage divider. Bright light makes
-the LDR a low resistance, so A0 sees nearly 5 V and reads close to 1023. Dark makes the
-LDR a high resistance and A0 falls towards 0. The firmware watches for a sudden drop.
+### Stage 2: the LCD
 
-### Test it
+Push the LCD into the breadboard so all 16 of its pins go into 16 separate rows, near
+one end of the board. Press it in square and firm. The pins are numbered 1 to 16 and
+the board has them printed next to the strip: **VSS VDD VO RS RW E D0 D1 D2 D3 D4 D5
+D6 D7 A K**.
 
-1. Plug the board in and open its serial monitor (COM3 for FINISH).
-2. Type `a` and Enter: **align mode**. Numbers arrive 5 times a second:
+Now run these wires. The row you work from is whichever row that LCD pin landed in.
+
+| LCD pin | Label | Connect to |
+|---|---|---|
+| 1 | VSS | **-** rail |
+| 2 | VDD | **+** rail |
+| 3 | VO | contrast, see below |
+| 4 | RS | Arduino **D12** |
+| 5 | RW | **-** rail |
+| 6 | E | Arduino **D11** |
+| 7, 8, 9, 10 | D0 to D3 | nothing at all |
+| 11 | D4 | Arduino **D2** |
+| 12 | D5 | Arduino **D3** |
+| 13 | D6 | Arduino **D4** |
+| 14 | D7 | Arduino **D5** |
+| 15 | A | one leg of the 220 ohm resistor, its other leg to the **+** rail |
+| 16 | K | **-** rail |
+
+The LCD has pins called D4 to D7 and the Arduino has pins called D2 to D5. They are
+different things that happen to share a naming style. Follow the table and the numbers
+climb together, which makes it hard to get wrong.
+
+**Contrast, LCD pin 3 (VO).** If you have a small potentiometer, push it into three
+rows, run its middle leg to LCD pin 3, one outer leg to the **+** rail and the other
+to the **-** rail. With no potentiometer, run a 1 kohm resistor from LCD pin 3 to the
+**-** rail instead, which gives a fixed and usually readable contrast.
+
+### Stage 3: the light sensor
+
+1. Push the LDR's two legs into two different places: one into **row 10**, the other
+   into the **+** rail.
+2. Push the 10 kohm resistor between **row 10** and the **-** rail.
+3. Jumper wire from **row 10** to the Arduino's **A0**.
+
+That is the whole sensor. The LDR and the resistor make a divider. Lots of light makes
+the LDR conduct well and A0 reads high, near 1023. Darkness makes A0 fall towards 0.
+The firmware watches for a sudden fall.
+
+### Stage 4: switch on
+
+1. Plug the USB cable into the Uno and the PC.
+2. Tell Claude, and the firmware gets flashed.
+3. Open the serial monitor at **115200 baud** with **Newline** line endings. From
+   PowerShell in the repo folder this also works:
+
+   ```powershell
+   .\tools\gate.ps1 -Port COM3 -Listen 30
+   ```
+
+4. Type `role solo` and press Enter. The board reboots.
+5. Type `display lcd` and press Enter. The LCD should show **BreakBeam** on the top
+   line and **12.34 s** underneath.
+6. Nothing on the LCD, or just a row of solid blocks? Turn the potentiometer slowly
+   from one end to the other. There is a narrow band where the text appears. If you
+   used the fixed resistor, try a smaller one, down to 220 ohm.
+7. Type `t` at any time to send 12.34 to the display again.
+
+### Stage 5: the beam
+
+1. Type `a` and press Enter for align mode. Numbers arrive five times a second, like
+   `A0=612 base=610 trips<488 [OK]`.
+2. Cup your hand over the LDR. `A0` should fall a long way. Take your hand away and it
+   climbs back. If it barely moves, the LDR leg, the 10 kohm leg and the A0 wire are
+   not all in the same row.
+3. Wrap a rubber band round the red pen's button so it stays on. Stand it on the bench
+   about 30 cm away and aim the dot at the face of the LDR. `A0` should jump high and
+   the board's **L** light should come on.
+4. Put a finger in the beam. The L light goes out.
+5. Type `a` again to stop the numbers.
+
+### Stage 6: get a time
+
+1. Type `l` and press Enter for lap mode.
+2. Wave your hand through the beam. The serial monitor says the clock started.
+3. Wave again. You get a time, on screen and on the LCD:
 
    ```
-   A0=612  baseline=610  triggers below=488  beam=OK
+   === RUN 1   TIME 2.318 s ===
+   CSV,1,2.318
    ```
 
-3. Cup your hand over the LDR: `A0` should fall a lot. Take it away: it climbs back.
-   If it barely moves, the LDR or the 10 k is in the wrong row. Check row numbers.
-4. Laser: wrap a rubber band or tape round the pen's button so it stays on. Stand it
-   on a tripod or a blob of Blu-Tack about 1 m from the breadboard and aim the dot onto
-   the LDR's face. `A0` should jump to 950+ and the L LED and your LED come on.
-   Block the dot with a finger: the LEDs go out. That is the whole sensor.
-5. Type `a` again to stop the numbers. Type `l` for **lap mode**. Wave your hand
-   through the beam: `LAP: clock started`. Wave again: `LAP TIME 1.234 s`. Compare a
-   few against a phone stopwatch. They should agree to within your reaction time.
+4. Time a few against a phone stopwatch. They should agree to about a tenth, which is
+   your reaction time rather than any error in the gate.
 
-**Pass:** laser on = LEDs on, hand through beam = a lap time. Now do the same on the
-START board (COM4). Align mode works there too; lap mode is finish-only, so just check
-that a hand through the beam prints `START beam broken (event N)`.
+**Pass:** the laser on the sensor lights the L light, and two waves give a time on the
+LCD.
+
+### Then two small upgrades
+
+**Swap in the phototransistor.** Pull the LDR out and put a TEPT5700 in the same two
+holes, long leg to the **+** rail and short leg to row 10. Nothing else changes. Go
+back to align mode: if `A0` now sits near 1023 even with the laser off, the sensor is
+saturating, so swap the 10 kohm for something smaller, 4.7 kohm or 1 kohm. You want a
+high reading with headroom, not one pinned at the top.
+
+**Add the buzzer.** First work out which of your three buzzers is which, with the
+multimeter on resistance across the two legs:
+
+| Reading | What it is | What to do |
+|---|---|---|
+| Open circuit, or megohms | Passive piezo | Perfect. Use this one. |
+| 15 to 50 ohm | Passive electromagnetic | Usable, but put 220 ohm in series or it pulls too much current from the pin. |
+| A few hundred ohm to a few kohm | Active, with its own oscillator | It only makes one fixed pitch. Fine as a beeper, but it ignores the tune. |
+
+Wire the chosen one with its **+** leg through a 220 ohm resistor to Arduino **D9**,
+and its other leg to the **-** rail. The 220 ohm is harmless with a piezo and protects
+the pin with the others.
 
 ---
 
@@ -252,7 +346,7 @@ Pick whichever you actually own and wire only that one. Tell the board with the
 
 | You have | Command | Wiring |
 |---|---|---|
-| 16x2 LCD, the 16-pin one with a 10 kΩ contrast pot | `display lcd` | RS=D12, E=D11, D4=D5, D5=D4, D6=D3, D7=D2, RW to GND, VSS to GND, VDD to 5V, VO to the pot wiper (pot ends to 5V and GND), LED+ via 220 Ω to 5V, LED− to GND |
+| 16x2 LCD, the 16-pin one (the 1602A) | `display lcd` | As wired in Phase 2: RS->D12, E->D11, D4->D2, D5->D3, D6->D4, D7->D5 |
 | 16x2 LCD with a small board soldered on the back and only 4 pins | `display i2clcd` | SDA=A4, SCL=A5, VCC=5V, GND=GND. The address is found for you. |
 | 4-digit "clock" module, 4 pins marked CLK and DIO | `display tm1637` | CLK=D2, DIO=D3, VCC=5V, GND=GND |
 | 8-digit 7-segment module, 5 pins marked DIN CS CLK | `display max7219` | DIN=D11, CS=D10, CLK=D12, VCC=5V, GND=GND |
