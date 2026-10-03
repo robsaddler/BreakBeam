@@ -6,6 +6,109 @@ radio only uses six Arduino pins, so six jumper wires replace them (see Phase 3)
 
 ---
 
+## Words used in this guide
+
+Nothing here assumes you have met any of this before. Skim it once and come back when
+a word trips you up.
+
+**Jumper wire**, usually just "jumper". A short flexible wire with a stiff metal pin
+moulded onto each end, sold in bundles of rainbow colours. The pins push into
+breadboard holes and into the Arduino's black sockets. They are called jumpers because
+they jump a connection from one place to another. The colours mean nothing electrically
+and are purely so you can follow your own work. By convention red is used for power and
+black for ground, which is worth copying.
+
+- **Male** end: a pin that sticks out. Goes *into* a hole.
+- **Female** end: a small socket. Goes *over* a pin.
+- **Male to male** jumpers have pins at both ends. These are what you want for
+  breadboard work, and are what most kits contain.
+
+So "jumper from the Uno's 5V to the + rail" means: take one jumper wire, push one end
+into the Arduino hole labelled 5V, and push the other end into any hole along the
+breadboard strip marked +.
+
+**Breadboard.** The white plastic block covered in small holes. It lets you build a
+circuit by pushing parts into holes instead of soldering. Inside, hidden metal clips
+join certain holes together, which is the whole trick.
+
+**Rail.** The long strip of holes running down each long edge of the breadboard,
+marked with a red line and a **+**, or a blue line and a **−**. Every hole along one
+rail is joined to every other hole on that same rail. We put 5 volts on the + rail and
+ground on the − rail, so that power is available all along the board.
+
+**Row.** In the middle section of the breadboard, a short run of five holes side by
+side. All five are joined to each other and to nothing else. Rows are usually numbered
+along the edge. When the guide says "row 10", it means: pick row number 10 and put both
+things in it, so they are connected.
+
+**Pin.** Two meanings, both common.
+1. A metal leg sticking out of a component or a board.
+2. A labelled connection point on the Arduino, such as 5V, GND, A0 or D12. The labels
+   are printed on the board right next to the black sockets.
+
+**Leg** or **lead.** The wire sticking out of a component such as a resistor or a
+sensor. Same thing as pin, meaning 1.
+
+**GND** stands for ground. It is the zero-volt side of the circuit, the common return
+path that everything connects back to. Think of it as the drain that all the water
+flows back down. The Arduino has several holes labelled GND and they are all the same
+point, so use whichever is convenient.
+
+**5V** is the Arduino's five-volt power output, the other side of the circuit. Current
+flows out of 5V, through your components, and back into GND.
+
+**A0 to A5** are the Arduino's *analogue input* pins. Analogue means they do not just
+read on or off, they measure a voltage and report it as a number from 0 (zero volts) to
+1023 (five volts). This is how the board can tell "a bit of light" from "lots of light".
+Our sensor goes to A0.
+
+**D0 to D13** are the *digital* pins. They deal in just on or off, and can act as
+inputs or outputs. We use them to drive the display and the buzzer.
+
+**Resistor.** A small component that restricts how much current can flow. Its value is
+in **ohms**, written Ω, and larger numbers restrict more. The value is printed as
+coloured bands around the body rather than as a number, so:
+
+| Value | Bands to look for |
+|---|---|
+| 220 Ω | red, red, brown |
+| 1 kΩ (1000 Ω) | brown, black, red |
+| 10 kΩ (10,000 Ω) | brown, black, orange |
+
+Read the bands from the end that has them grouped closest together. The lone gold or
+silver band at the other end is the tolerance and you can ignore it. A resistor has no
+right way round.
+
+**Polarity** means a component cares which way round it goes. A resistor and an LDR do
+not. An LED, a buzzer and a phototransistor do, and putting them in backwards means
+they do not work.
+
+**LDR**, light dependent resistor, sometimes photoresistor. A small orange disc whose
+resistance falls when light hits it. Cheap, slow, no polarity.
+
+**Phototransistor.** Does the same job far faster, which is why it is better for
+timing. It has polarity. The TEPT5700 is the one you bought.
+
+**Potentiometer**, usually "pot". An adjustable resistor with a knob or a slot for a
+screwdriver, and three legs. Turning it varies the resistance between the middle leg
+and the outer two. We use one to set the display's contrast.
+
+**Flashing** or **uploading**. Copying the program from the PC onto the Arduino over
+the USB lead. The program then stays on the board, even with the power off, until it is
+replaced.
+
+**Serial monitor.** A window on the PC showing the text the Arduino prints over the USB
+lead, and letting you type text back. This is how you give the board commands such as
+`role solo`.
+
+**Baud** is the speed the board and the PC talk at, in bits per second. Both ends have
+to agree or you get gibberish. Ours is 115200.
+
+**Firmware.** The program running on the Arduino, as opposed to software running on the
+PC. Same idea, different word, because it lives inside a device.
+
+---
+
 ## Phase 0 - know your boards
 
 ### The four LEDs on an Arduino Uno
@@ -139,7 +242,8 @@ thing at a time.
 
 ### How a breadboard works
 
-Thirty seconds of theory, then you can stop thinking about it.
+If any word below is unfamiliar, the glossary at the top of this guide defines every
+term used here. The short version:
 
 - The two long strips down each edge, marked **+** and **-** with a red and a blue
   line, are each joined all the way along. These are the rails. One carries 5 V, the
