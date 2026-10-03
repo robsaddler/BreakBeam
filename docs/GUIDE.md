@@ -125,7 +125,8 @@ work fine for this. Three rules, and they are not optional:
 |---|---|---|
 | Arduino Uno + USB cable | Either board | 1 |
 | Breadboard | The white one | 1 |
-| LDR | Small orange disc, two legs, no polarity | 1 |
+| TEPT5700 phototransistor | The new ones. Clear 5 mm body, two legs of **different lengths** | 1 |
+| LDR | Small orange disc. Keep one to hand as a fallback only | 1 |
 | 10 kohm resistor | Bands brown, black, orange | 1 |
 | 220 ohm resistor | Bands red, red, brown | 1 |
 | LCD | The **1602A**, the one that already has a black 16-pin strip soldered on. Not the big 2004A. | 1 |
@@ -196,14 +197,22 @@ to the **-** rail. With no potentiometer, run a 1 kohm resistor from LCD pin 3 t
 
 ### Stage 3: the light sensor
 
-1. Push the LDR's two legs into two different places: one into **row 10**, the other
-   into the **+** rail.
+Unlike the LDR, **the phototransistor has a right way round**. Look at its two legs:
+one is longer than the other. The long leg is the collector and goes to the positive
+side. Get this right before you power up.
+
+1. **Long leg** into the **+** rail. **Short leg** into **row 10**.
 2. Push the 10 kohm resistor between **row 10** and the **-** rail.
 3. Jumper wire from **row 10** to the Arduino's **A0**.
 
-That is the whole sensor. The LDR and the resistor make a divider. Lots of light makes
-the LDR conduct well and A0 reads high, near 1023. Darkness makes A0 fall towards 0.
-The firmware watches for a sudden fall.
+That is the whole sensor, and it is the same shape of circuit as the LDR version: the
+sensor and the resistor make a divider, and A0 reads the middle of it. More light means
+more current through the phototransistor, which pulls A0 higher. Darkness lets it fall
+towards 0. The firmware watches for a sudden fall.
+
+If you get the legs the wrong way round nothing catches fire, because the 10 kohm
+limits the current to a fraction of a milliamp. The symptom is simply a reading that
+sits low and barely reacts to light. Turn it round and carry on.
 
 ### Stage 4: switch on
 
@@ -228,12 +237,26 @@ The firmware watches for a sudden fall.
 
 1. Type `a` and press Enter for align mode. Numbers arrive five times a second, like
    `A0=612 base=610 trips<488 [OK]`.
-2. Cup your hand over the LDR. `A0` should fall a long way. Take your hand away and it
-   climbs back. If it barely moves, the LDR leg, the 10 kohm leg and the A0 wire are
-   not all in the same row.
+2. Cup your hand over the sensor. `A0` should fall. Take your hand away and it climbs
+   back. If it barely moves at all, either the short leg, the 10 kohm leg and the A0
+   wire are not all in the same row, or the phototransistor is in backwards.
 3. Wrap a rubber band round the red pen's button so it stays on. Stand it on the bench
-   about 30 cm away and aim the dot at the face of the LDR. `A0` should jump high and
-   the board's **L** light should come on.
+   about 30 cm away and aim the dot at the face of the phototransistor. `A0` should
+   jump high and the board's **L** light should come on.
+
+**What good numbers look like.** A phototransistor is far more sensitive than an LDR,
+so expect a big gap rather than a gentle one:
+
+| Condition | Expected `A0` |
+|---|---|
+| Room light only, no laser | low, roughly 20 to 200 |
+| Laser dot on the sensor | very high, often pinned at 1023 |
+| Finger in the beam | back down to the room-light figure |
+
+Pinned at 1023 **with the laser on is fine and is what you want**, because the
+firmware only ever looks for a sudden fall. The one case that needs fixing is room
+light alone reading above about 700, which means a lamp or a window is shining
+straight in. Shade the sensor, or swap the 10 kohm for 1 kohm.
 4. Put a finger in the beam. The L light goes out.
 5. Type `a` again to stop the numbers.
 
@@ -254,13 +277,7 @@ The firmware watches for a sudden fall.
 **Pass:** the laser on the sensor lights the L light, and two waves give a time on the
 LCD.
 
-### Then two small upgrades
-
-**Swap in the phototransistor.** Pull the LDR out and put a TEPT5700 in the same two
-holes, long leg to the **+** rail and short leg to row 10. Nothing else changes. Go
-back to align mode: if `A0` now sits near 1023 even with the laser off, the sensor is
-saturating, so swap the 10 kohm for something smaller, 4.7 kohm or 1 kohm. You want a
-high reading with headroom, not one pinned at the top.
+### Then one more thing
 
 **Add the buzzer.** First work out which of your three buzzers is which, with the
 multimeter on resistance across the two legs:
@@ -274,6 +291,10 @@ multimeter on resistance across the two legs:
 Wire the chosen one with its **+** leg through a 220 ohm resistor to Arduino **D9**,
 and its other leg to the **-** rail. The 220 ohm is harmless with a piezo and protects
 the pin with the others.
+
+**If the phototransistor misbehaves**, the LDR is the fallback. It drops into the same
+two holes, has no polarity so it cannot go in backwards, and needs no other change.
+It is slower, which costs accuracy at speed, but it will prove the rest of the chain.
 
 ---
 
