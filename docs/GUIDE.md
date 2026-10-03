@@ -848,7 +848,6 @@ Both gates:
 | Fit | Connects to | Why |
 |---|---|---|
 | 3-pin female header, marked SENSOR | 5V, A0, GND | the sensor head plugs in here on a short lead |
-| 2-pin female header, marked LASER | 5V, GND | powers a laser module, see below |
 | Buzzer, with 330 ohm in series | D9 and GND | no aiming needed, so it can live on the board |
 | LED, with 330 ohm in series | D7 and GND | beam-is-landing light, visible on the outside of the case |
 
@@ -928,18 +927,44 @@ The diffuser disc across the hood mouth matters most here. It turns the target f
 5 mm lens into the whole hood mouth, which across a two metre lane is the difference
 between fiddly and quick.
 
-### The laser: stop using pens
+### The laser end: a printed clamp for the pen
 
-A taped-up laser pen inside a sealed case is not a product. Buy two **5 V laser diode
-modules**, Class 2 and 1 mW, about £2 each. They have two wires, take 5 V directly, and:
+The laser pens already carry their own batteries, so the laser box needs no electronics
+and no power supply of its own. It is a printed clamp with a tripod thread, and that is
+all.
 
-- no button to tape down and no pen battery to go flat mid-session
-- they switch on with the gate, so there is one switch per gate rather than three things to remember
-- they are a fixed cylinder, roughly 6 x 10 mm, so a printed clamp holds them in true alignment instead of a pen balanced on a mount
+The clamp has one job beyond holding the pen still: **it should press the pen's button
+for you.** Tape was what kept slipping on the bench, and a printed part can do it
+properly.
 
-Wire one to the LASER socket on each board. If you later want the gate to switch its
-laser, that moves to a spare digital pin through a transistor, but powering it straight
-from 5 V is fine to start.
+Design that as a **thumbscrew bearing on the button**. Screw it in and the laser is on,
+back it off and it is off. That gives a real on/off control without modifying the pen
+and nothing to creep. Put it where you can reach it with the pen clamped and the box on
+a tripod.
+
+The rest of it:
+
+- **A split clamp with a pinch screw**, not a plain printed hole. A hole sized to grip
+  comes out wrong by a few tenths once printed, and anything that merely slides in will
+  rotate in time. A degree of rotation loses the sensor across a two metre lane.
+- **Measure the barrel with calipers** where the clamp grips. Pen lasers run about 12 to
+  14 mm, and if your two differ, print two clamps rather than one compromise.
+- **Line the clamp with something soft**, a strip of inner tube or a few layers of tape,
+  so it can be nipped tight without marking the barrel.
+- **A captive 1/4 inch 20 UNC nut** in the base, as a hex pocket you push the nut into.
+  Do not try to print the thread.
+- **Support the pen at two points** along its length. A single ring lets it pivot.
+
+Two things to expect. Those pens run on small button cells, and with the button held on
+you get a few hours at best, fading rather than stopping cleanly. Carry spares and check
+the reading at the start of a session rather than mid-sprint. And all the aiming
+adjustment now comes from the tripod head, so put your finest pan-and-tilt heads on the
+laser ends.
+
+**If you later tire of button cells**, a 5 V laser module removes them: about £13 for a
+Class 2 one with an automatic power control driver, which also holds its brightness
+steady as it warms up. That would need a battery in the laser box, 3 x AA or a USB power
+bank, since the module has none of its own. Not needed to get going.
 
 ### Case design notes
 
@@ -952,8 +977,7 @@ around:
 | 1602 LCD module | 80 x 36 x 13 mm, viewing window 65 x 16 mm |
 | PP3 battery | 48 x 27 x 18 mm |
 | Sensor hood | 35 mm long, 8 mm bore |
-| Laser module | 7 mm diameter, 21 mm long for the VLM-650-03; measure yours, 6 mm is also common |
-| 3 x AA battery holder | 58 x 46 x 17 mm |
+| Laser pen | measure the barrel with calipers, typically 12 to 14 mm |
 | SMA bulkhead connector | needs a 6.5 mm hole |
 | Tripod thread | 1/4 inch 20 UNC nut, captive |
 
