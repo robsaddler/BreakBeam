@@ -511,6 +511,17 @@ straight in. Shade the sensor, or swap the 10 kohm for 1 kohm.
 **Pass:** the laser on the sensor lights the L light, and two waves give a time on the
 LCD.
 
+**Result on 3 Oct 2026:** passed on the first board. With the TEPT5700 and a 10 kohm
+resistor the beam read **1022** with the red laser on it and about **181** blocked, a
+five-fold margin with nothing marginal about it. Three hand-waved lap times came out at
+1.410 s, 0.821 s and 1.480 s.
+
+Two things learned on the way. The sensor reads low in room light, around 190, and the
+board correctly says TOO DIM until the laser is actually on it; that is not a fault.
+And an unwired analogue pin mirrors its neighbour, so with only A0 connected, A1 reports
+almost the same number and will fire spurious finish events. That is exactly why this
+stage uses lap mode, which looks at A0 alone.
+
 ### Then one more thing
 
 **Add the buzzer.** First work out which of your three buzzers is which, with the

@@ -480,7 +480,7 @@ void printHelp() {
   Serial.println(F("  display none | lcd | i2clcd | tm1637 | max7219"));
   Serial.println(F("  a   ALIGN mode on/off: live sensor numbers 5x a second"));
   Serial.println(F("  l   LAP mode on/off: time between two breaks of the START beam alone"));
-  Serial.println(F("  t   test the display (shows 12.34)"));
+  Serial.println(F("  t   re-initialise the display and show 12.34 (fixes a garbled screen)"));
   Serial.println(F("  r   reset / re-arm"));
   Serial.println(F("  s   buzzer on/off"));
   Serial.println(F("  h   this help"));
@@ -507,7 +507,11 @@ bool handleCommonCommand(const char* line) {
   if (!strncmp(line, "display ", 8)) return setDisplay(line + 8);
   if (!strcmp(line, "a")) { alignMode = !alignMode; Serial.println(alignMode ? F("ALIGN mode ON") : F("ALIGN mode OFF")); return true; }
   if (!strcmp(line, "s")) { soundOn = !soundOn;     Serial.println(soundOn ? F("Buzzer ON") : F("Buzzer OFF")); return true; }
-  if (!strcmp(line, "t")) { dispTitle("BreakBeam"); dispTime(12340000UL); Serial.print(F("Sent 12.34 to display: ")); Serial.println(dispName(disp)); return true; }
+  if (!strcmp(line, "t")) {   // re-initialise first: a garbled display is usually one that lost its setup
+    dispInit(); dispTitle("BreakBeam"); dispTime(12340000UL);
+    Serial.print(F("Display re-initialised and sent 12.34: ")); Serial.println(dispName(disp));
+    return true;
+  }
   if (!strcmp(line, "h") || !strcmp(line, "?")) { printHelp(); return true; }
   return false;
 }
