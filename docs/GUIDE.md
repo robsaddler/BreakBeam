@@ -38,8 +38,18 @@ ground on the − rail, so that power is available all along the board.
 
 **Row.** In the middle section of the breadboard, a short run of five holes side by
 side. All five are joined to each other and to nothing else. Rows are usually numbered
-along the edge. When the guide says "row 10", it means: pick row number 10 and put both
-things in it, so they are connected.
+along the edge. When this guide says "put both of these in the same row", it means pick
+any row and push both legs into it, which connects them.
+
+Which row number you pick never matters. What matters is the opposite: **a row you are
+using for one job must not contain anything else**, or those two things get joined
+together whether you wanted it or not. Before using a row, look along all five of its
+holes and check they are empty.
+
+One more thing that often surprises people: the channel down the middle of the board
+splits every row in two. The five holes above the channel and the five below it are
+numbered the same but are **not** connected. So "row 10" above the channel and "row 10"
+below it are two separate rows you can use for different jobs.
 
 **Pin.** Two meanings, both common.
 1. A metal leg sticking out of a component or a board.
@@ -313,9 +323,18 @@ Unlike the LDR, **the phototransistor has a right way round**. Look at its two l
 one is longer than the other. The long leg is the collector and goes to the positive
 side. Get this right before you power up.
 
-1. **Long leg** into the **+** rail. **Short leg** into **row 10**.
-2. Push the 10 kohm resistor between **row 10** and the **-** rail.
-3. Jumper wire from **row 10** to the Arduino's **A0**.
+Pick any **completely empty row** for this and call it the sensor row. Not one of the
+sixteen rows the LCD's pins are sitting in, and not one holding any other leg or wire.
+Check all five of its holes are free before you start. The row number itself is
+irrelevant; it just has to be a row nothing else is using.
+
+1. **Long leg** into the **+** rail. **Short leg** into the **sensor row**.
+2. Push the 10 kohm resistor between the **sensor row** and the **-** rail.
+3. Jumper wire from the **sensor row** to the Arduino's **A0**.
+
+Those three things, and only those three things, share the sensor row. That shared row
+is the middle of the divider, and it is what A0 measures. Anything else pushed into it
+would be wired straight onto the sensor's output.
 
 That is the whole sensor, and it is the same shape of circuit as the LDR version: the
 sensor and the resistor make a divider, and A0 reads the middle of it. More light means
@@ -351,7 +370,8 @@ sits low and barely reacts to light. Turn it round and carry on.
    `A0=612 base=610 trips<488 [OK]`.
 2. Cup your hand over the sensor. `A0` should fall. Take your hand away and it climbs
    back. If it barely moves at all, either the short leg, the 10 kohm leg and the A0
-   wire are not all in the same row, or the phototransistor is in backwards.
+   wire are not all in the sensor row, or something else has crept into that row, or
+   the phototransistor is in backwards.
 3. Wrap a rubber band round the red pen's button so it stays on. Stand it on the bench
    about 30 cm away and aim the dot at the face of the phototransistor. `A0` should
    jump high and the board's **L** light should come on.
