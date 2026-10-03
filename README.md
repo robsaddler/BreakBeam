@@ -44,5 +44,6 @@ breaks it subtracts the two. No clock sync, no drift problem.
 2. **Phase 2 - beam sensor**: LDR + laser on a breadboard, one board at a time (shield off). Align mode and lap mode.
 3. **Phase 2B - both beams on one board**: two sensors joined by a long cable, plus a display. The whole product except the radio, and it needs no soldering.
 4. **Phase 3 - two gates over the radio** (done, 3 Oct 2026): first wireless time 4.095 s, start event synced to within 8 ms. The shield needs only six wires (3V3, 5V, GND, D0, D1, D8), so no soldering was needed.
-5. **Phase 4 - outdoors**: hoods for the LDRs, tripods, battery power, faster sensor (phototransistor).
-6. **Phase 5 - productise**: 3D-printed housings (Bambu P2S), display on the finish gate, logging app.
+5. **Phase 4 - the permanent build**: each gate on a soldered prototype shield in a vertical stack, sensor and laser on leads, one 9V PP3 each. Written up ready for the case.
+6. **Phase 5 - the case**: 3D-printed housings (Bambu P2S) with the laser and hooded sensor rigidly parallel, a tripod thread and a bubble level.
+7. **Later**: a second beam per gate so a trailing hand cannot trigger it, and a logging script (the finish gate already prints `CSV,run,time`).

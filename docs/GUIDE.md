@@ -791,21 +791,163 @@ not the gates).
 
 ---
 
-## Phase 4 and 5 - outdoors, then productise
+## Phase 4 - the permanent build, ready for a case
 
-Once Phase 3 passes, in this order:
+Breadboards are for proving a circuit, not for keeping one. This phase moves each gate
+onto a soldered prototype shield in a vertical stack, with every part that has to point
+somewhere on the end of a lead. Do this before designing the case, because the case has
+to fit the result.
 
-1. **Power:** USB power banks (most stay on at the Uno's 70-100 mA draw). Or 9 V PP3
-   into the barrel jack for short sessions.
-2. **Hoods for the LDRs** (first 3D print), then **phototransistor upgrade**.
-3. **Laser modules instead of pens:** 5 V red laser diode modules (Class 2, 1 mW) can
-   be powered from the Uno's 5 V pin, no taped buttons.
-4. **Housing:** printed case per gate holding Uno + shield + sensor on one side and
-   the laser on an adjustable mount, with a 1/4"-20 tripod nut. Antenna clear of metal.
-5. **Display on the finish gate:** the starter kit's 16x2 LCD or a TM1637 4-digit
-   display so you don't need the laptop at the track.
-6. **Logging:** the finish gate already prints `CSV,run,time` lines. A tiny script on
-   the laptop (or a phone over USB OTG) can save them per athlete.
+### Power: one 9 V PP3 per gate
+
+Into the barrel jack, which wants 7 to 12 volts, so 9 V is right.
+
+**Never put two 9 V batteries in series.** 18 volts is past what the Uno's regulator is
+built for; it will run hot and may fail.
+
+What to expect per gate:
+
+| | Current | Runtime on a PP3 |
+|---|---|---|
+| Finish gate, with display | about 80 mA | 4 to 5 hours |
+| Start gate, no display | about 65 mA | 5 to 6 hours |
+
+Fit a **switch in the battery's positive lead**, between the battery and the barrel
+plug. Without one the only way to turn a gate off is to unplug the battery, and in a
+sealed case that means opening it every time.
+
+A USB power bank is the cheaper long-term option, running for days and costing nothing
+per session, so leave room in the case for either. A PP3 is 48 x 27 x 18 mm and a small
+power bank is about 95 x 45 x 22 mm, so design the compartment for the power bank and a
+battery will fit anywhere.
+
+### The stack
+
+```
+   SRF radio shield     <- top, antenna in clear air
+   Prototype shield     <- the whole circuit lives here
+   Arduino Uno          <- bottom, barrel jack and USB at one end
+```
+
+The radio goes on **top** for a reason. Its own datasheet warns that covering the
+antenna section cuts the range, and a board sitting above it does exactly that. This
+order also means nothing has to stack above the radio, so the stackable headers you
+bought are not needed here at all.
+
+Overall stack is roughly **69 x 53 mm and 40 mm tall**. Measure your own before cutting
+any CAD, since header heights vary.
+
+### What goes on the prototype shield
+
+The guiding rule: **anything that has to point somewhere lives on a lead, not on the
+board.** The sensor has to look down the lane and the laser has to shine along it, so
+neither can be soldered flat to a shield buried in a case.
+
+Both gates:
+
+| Fit | Connects to | Why |
+|---|---|---|
+| 3-pin female header, marked SENSOR | 5V, A0, GND | the sensor head plugs in here on a short lead |
+| 2-pin female header, marked LASER | 5V, GND | powers a laser module, see below |
+| Buzzer, with 330 ohm in series | D9 and GND | no aiming needed, so it can live on the board |
+| LED, with 330 ohm in series | D7 and GND | beam-is-landing light, visible on the outside of the case |
+
+Finish gate only:
+
+| Fit | Connects to | Why |
+|---|---|---|
+| 16-pin female header, marked LCD | RS to D12, E to D11, D4 to D2, D5 to D3, D6 to D4, D7 to D5, plus 5V, GND, RW to GND | the screen mounts in the case lid on a ribbon |
+| 10 kohm trimmer pot | between 5V and GND, wiper to LCD pin 3 | contrast. A small trimmer you set once and forget, not the big panel pot |
+| 330 ohm | 5V to LCD pin 15 | backlight |
+
+Use the shield's printed 5 V and ground rails rather than running those by hand.
+
+**Solder sockets, not components, wherever a part might fail.** A phototransistor
+soldered directly to the board is a part you will regret the first time one dies.
+
+### The sensor head
+
+This is the part that goes inside the printed hood and points at the far laser.
+
+```
+   in the hood                         to the SENSOR socket
+
+   5V  ────┐
+           │
+         [ TEPT5700 ]  long leg up
+           │
+           ├──────────── signal
+           │
+        [ 10k ]
+           │
+   GND ────┘
+```
+
+Both the phototransistor **and** the 10 kohm live in the hood, with three wires back to
+the board. That keeps the high-impedance middle of the divider short, so the long lead
+carries a low-impedance signal and picks up far less noise.
+
+Hood dimensions that work: **35 mm long, 8 mm bore**, with the sensor at the back and a
+translucent diffuser disc across the mouth. The diffuser spreads the laser dot over the
+whole sensor, so aiming stops being a 3 mm target, and it makes the dot visible from
+behind, which is a genuinely useful alignment aid.
+
+### The laser: stop using pens
+
+A taped-up laser pen inside a sealed case is not a product. Buy two **5 V laser diode
+modules**, Class 2 and 1 mW, about £2 each. They have two wires, take 5 V directly, and:
+
+- no button to tape down and no pen battery to go flat mid-session
+- they switch on with the gate, so there is one switch per gate rather than three things to remember
+- they are a fixed cylinder, roughly 6 x 10 mm, so a printed clamp holds them in true alignment instead of a pen balanced on a mount
+
+Wire one to the LASER socket on each board. If you later want the gate to switch its
+laser, that moves to a spare digital pin through a transistor, but powering it straight
+from 5 V is fine to start.
+
+### Case design notes
+
+Measure everything yourself before committing, but these are the figures to design
+around:
+
+| Part | Approximate size |
+|---|---|
+| Uno plus two shields | 69 x 53 x 40 mm |
+| 1602 LCD module | 80 x 36 x 13 mm, viewing window 65 x 16 mm |
+| PP3 battery | 48 x 27 x 18 mm |
+| Sensor hood | 35 mm long, 8 mm bore |
+| Laser module | 6 mm diameter, 10 mm long |
+| SMA bulkhead connector | needs a 6.5 mm hole |
+| Tripod thread | 1/4 inch 20 UNC nut, captive |
+
+Five things the case has to get right:
+
+1. **The sensor and the laser must be rigidly parallel**, mounted on the same bracket.
+   Everything else is detail; this is the whole job. Aiming failed on the bench purely
+   because the pen could move relative to the sensor.
+2. **A bubble level recess on top.** Aligning two gates then becomes "level both
+   tripods at the same height", not trial and error.
+3. **Keep metal away from the antenna end**, and put the SMA connector where a tripod
+   head cannot shadow it.
+4. **The USB socket must stay reachable** without opening the case, for firmware
+   updates and for the finish gate to talk to a laptop.
+5. **The L light and the power switch on the outside.** On the start gate that LED is
+   the only indication the beam is landing.
+
+### Build order, with a test after each step
+
+Do not solder the lot and then look for faults. Build one gate at a time, in this
+order, testing as you go:
+
+1. Fit the headers so the shield stacks cleanly. Stack it, power up, confirm the board
+   still boots and reports its role.
+2. Solder the **sensor socket** and make up the sensor head. Test with `a` for align
+   mode: you want about 1000 with the laser on it and under 200 blocked.
+3. Solder the **buzzer and LED**. Break the beam and check both react.
+4. Finish gate only: solder the **LCD socket and trimmer**. Set the contrast once.
+5. Fit the **SRF shield on top** and confirm the radio self-test passes.
+6. Both gates together: confirm the link comes up and you get a real time.
+7. Only then design the case around what you are holding.
 
 ---
 
