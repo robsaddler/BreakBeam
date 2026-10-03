@@ -33,7 +33,7 @@ breaks it subtracts the two. No clock sync, no drift problem.
 | `display none\|lcd\|i2clcd\|tm1637\|max7219` | Which display is wired up. Remembered. |
 | `t` | Re-initialise the display and show 12.34. Fixes a garbled screen. |
 | `a` | Align mode: live sensor numbers 5x a second. Use while pointing the laser. |
-| `l` | Lap mode: time between two breaks of the start beam alone. Works with a single sensor, and is remembered across resets. |
+| `l`, `lap on`, `lap off` | Lap mode, **solo role only**: time between two breaks of the start beam alone. Works with a single sensor and is remembered across resets. |
 | `r` | Re-arm. |
 | `s` | Buzzer on/off. |
 | `h` | Help. |
@@ -43,6 +43,6 @@ breaks it subtracts the two. No clock sync, no drift problem.
 1. **Phase 1 - radio link** (done, 15-16 ms round trip): shields on, no other wiring.
 2. **Phase 2 - beam sensor**: LDR + laser on a breadboard, one board at a time (shield off). Align mode and lap mode.
 3. **Phase 2B - both beams on one board**: two sensors joined by a long cable, plus a display. The whole product except the radio, and it needs no soldering.
-4. **Phase 3 - two gates over the radio**: the shield needs only six wires (3V3, 5V, GND, D0, D1, D8), so jumper wires work today and stackable headers are a later tidy-up.
+4. **Phase 3 - two gates over the radio** (done, 3 Oct 2026): first wireless time 4.095 s, start event synced to within 8 ms. The shield needs only six wires (3V3, 5V, GND, D0, D1, D8), so no soldering was needed.
 5. **Phase 4 - outdoors**: hoods for the LDRs, tripods, battery power, faster sensor (phototransistor).
 6. **Phase 5 - productise**: 3D-printed housings (Bambu P2S), display on the finish gate, logging app.

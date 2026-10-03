@@ -542,7 +542,7 @@ void printHelp() {
   Serial.println(F("  role solo | role start | role finish   set this board's job, then it reboots"));
   Serial.println(F("  display none | lcd | i2clcd | tm1637 | max7219"));
   Serial.println(F("  a   ALIGN mode on/off: live sensor numbers 5x a second"));
-  Serial.println(F("  l   LAP mode on/off: time between two breaks of the START beam alone"));
+  Serial.println(F("  l | lap on | lap off   one beam only, timed between its own breaks"));
   Serial.println(F("  t   re-initialise the display and show 12.34 (fixes a garbled screen)"));
   Serial.println(F("  r   reset / re-arm"));
   Serial.println(F("  s   buzzer on/off"));
@@ -568,6 +568,15 @@ bool handleCommonCommand(const char* line) {
   if (!strcmp(line, "role start"))  { saveRole(ROLE_START);  Serial.println(F("Role saved: START"));  rebootNow(); }
   if (!strcmp(line, "role finish")) { saveRole(ROLE_FINISH); Serial.println(F("Role saved: FINISH")); rebootNow(); }
   if (!strncmp(line, "display ", 8)) return setDisplay(line + 8);
+  // Explicit forms as well as the toggle. On the finish gate a typed command shares
+  // the serial line with radio traffic and is easily lost, and a toggle that may or
+  // may not have arrived is worse than useless, so these can be sent repeatedly.
+  if (!strcmp(line, "lap on") || !strcmp(line, "lap off")) {
+    lapMode = !strcmp(line, "lap on");
+    EEPROM.update(EE_LAP_ADDR, lapMode ? 1 : 0);
+    Serial.println(lapMode ? F("LAP mode ON") : F("LAP mode OFF"));
+    return true;
+  }
   if (!strcmp(line, "a")) { alignMode = !alignMode; Serial.println(alignMode ? F("ALIGN mode ON") : F("ALIGN mode OFF")); return true; }
   if (!strcmp(line, "s")) { soundOn = !soundOn;     Serial.println(soundOn ? F("Buzzer ON") : F("Buzzer OFF")); return true; }
   if (!strcmp(line, "t")) {   // re-initialise first: a garbled display is usually one that lost its setup
@@ -771,17 +780,17 @@ void handleReply() {
 }
 void finishGateLoop() {
   unsigned long nowMs = millis();
+  // Lap mode belongs to the solo role. This gate has a start gate to listen to, so
+  // it always times start-to-finish. It also could not be switched off reliably: a
+  // typed command here shares the wire with ten radio polls a second and is shredded.
   if (beamA.update()) {
     unsigned long nowUs = beamA.lastTriggerUs;
-    if (lapMode) { beep(2000, 80); handleLap(nowUs); }
-    else {
-      beep(2000, 80);
-      switch (state) {
-        case RUNNING:  tFinishUs = nowUs; finalizeRun(); break;
-        case SYNCING:  tFinishUs = nowUs; pendingFinish = true; break;
-        case ARMED:    Serial.println(F("FINISH beam broken but no start was seen - ignored. (Type 'l' for LAP mode.)")); break;
-        case COOLDOWN: break;
-      }
+    beep(2000, 80);
+    switch (state) {
+      case RUNNING:  tFinishUs = nowUs; finalizeRun(); break;
+      case SYNCING:  tFinishUs = nowUs; pendingFinish = true; break;
+      case ARMED:    Serial.println(F("FINISH beam broken but no start was seen - ignored.")); break;
+      case COOLDOWN: break;
     }
   }
   digitalWrite(LED_BUILTIN, beamA.beamPresent());
@@ -790,17 +799,13 @@ void finishGateLoop() {
     if (lineBuf[0] == '@') { if (lineBuf[1] == 'R') handleReply(); }
     else if (lineBuf[0]) {
       if      (!strcmp(lineBuf, "r")) { linkUp = false; seenSlaveOnce = false; lapArmed = false; armFinish(); }
-      else if (!strcmp(lineBuf, "l")) {
-        lapMode = !lapMode; lapArmed = false;
-        EEPROM.update(EE_LAP_ADDR, lapMode ? 1 : 0);   // sticky, so a reset does not lose it
-        Serial.println(lapMode ? F("LAP mode ON: this gate's own beam, timed between breaks") : F("LAP mode OFF"));
-      }
+      else if (!strcmp(lineBuf, "l")) Serial.println(F("LAP mode applies to the solo role only; this gate times start to finish."));
       else handleCommonCommand(lineBuf);
     }
   }
 
-  bool clockRunning2 = lapMode ? lapArmed : (state == RUNNING);
-  liveClockTick(clockRunning2, lapMode ? lapStartUs : tStartUs, nowMs);
+  bool clockRunning2 = (state == RUNNING);
+  liveClockTick(clockRunning2, tStartUs, nowMs);
   if (!clockRunning2) {
     bool present = beamA.beamPresent();
     if (present) beamGoneSinceMs = 0;
@@ -847,7 +852,7 @@ void setup() {
   Serial.println(F("================ BreakBeam speed gate ================"));
   Serial.print(F("Role: "));    Serial.println(roleName(role));
   Serial.print(F("Display: ")); Serial.println(dispName(disp));
-  if (lapMode) Serial.println(F("LAP mode is ON (one beam, timed between breaks)"));
+  if (lapMode && role == ROLE_SOLO) Serial.println(F("LAP mode is ON (one beam, timed between breaks)"));
   if (role == ROLE_UNSET) Serial.println(F(">>> Type  role solo  (both beams, one board)  or  role start  or  role finish"));
 
   // D8 must always be driven, never left floating. With a shield attached a floating
