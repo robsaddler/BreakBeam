@@ -122,8 +122,49 @@ void rebootNow() {
 }
 
 // ---------------------------------------------------------------- sound
-bool soundOn = true;
-void beep(unsigned int hz, unsigned long ms) { if (soundOn) tone(PIN_BUZZER, hz, ms); }
+// Each event gets a shape you can tell apart across a track without looking:
+// rising means something has begun, falling means something has finished, and a
+// climbing triad means a time is ready. Everything sits between 1 and 2 kHz, where
+// a piezo is loudest; low notes are nearly inaudible on one.
+//
+// Sequences play from millis() rather than with delay(). A blocking tune on the
+// start gate would stall its reply to the finish gate's poll and drop the link, and
+// on the finish gate it would delay detection of the next beam break.
+enum Snd : uint8_t { SND_NONE = 0, SND_READY, SND_START, SND_FINISH, SND_RESULT, SND_IGNORED };
+static const unsigned int SND_HZ[6][3] = {
+  {    0,    0,    0 },   // none
+  { 1047,    0,    0 },   // ready      - one note on power-up
+  { 1047, 1568,    0 },   // start      - rising fifth, C6 to G6
+  { 1568, 1047,    0 },   // finish     - the same fifth falling
+  { 1047, 1568, 2093 },   // result     - climbing octave, a time is ready
+  {  784,  784,    0 },   // ignored    - two flat notes, nothing happened
+};
+static const unsigned int SND_MS[6][3] = {
+  {   0,   0,   0 },
+  {  70,   0,   0 },
+  {  90, 130,   0 },
+  {  90, 130,   0 },
+  {  80,  80, 220 },
+  {  60,  60,   0 },
+};
+bool          soundOn   = true;
+uint8_t       sndId     = SND_NONE;
+uint8_t       sndStep   = 0;
+unsigned long sndNextMs = 0;
+
+void playSound(uint8_t id) {
+  if (!soundOn) return;
+  sndId = id; sndStep = 0; sndNextMs = millis();
+}
+void soundTick(unsigned long nowMs) {
+  if (sndId == SND_NONE) return;
+  if ((long)(nowMs - sndNextMs) < 0) return;
+  if (sndStep >= 3 || SND_HZ[sndId][sndStep] == 0) { sndId = SND_NONE; return; }
+  unsigned int hz = SND_HZ[sndId][sndStep], ms = SND_MS[sndId][sndStep];
+  tone(PIN_BUZZER, hz, ms);
+  sndNextMs = nowMs + ms + 30;     // a short gap so two notes stay two notes
+  sndStep++;
+}
 
 // ================================================================ DISPLAY DRIVERS
 // Each driver is hand-written so no extra libraries need installing.
@@ -553,7 +594,7 @@ void printHelp() {
   Serial.println(F("  l | lap on | lap off   one beam only, timed between its own breaks"));
   Serial.println(F("  t   re-initialise the display and show 12.34 (fixes a garbled screen)"));
   Serial.println(F("  r   reset / re-arm"));
-  Serial.println(F("  s   buzzer on/off"));
+  Serial.println(F("  s   buzzer on/off. Rising = started, falling = finished, climbing = time ready."));
   Serial.println(F("  h   this help"));
 }
 bool setDisplay(const char* name) {
@@ -608,7 +649,7 @@ void reportRun(unsigned long elapsed, const char* note) {
   char title[17]; snprintf(title, sizeof(title), "Run %u", runNumber);
   dispTitle(title); dispTime(elapsed);
   holdingResult = true; lastShownBucket = -1; lastShownPresent = -1;
-  beep(2000, 120); delay(150); beep(2600, 200);
+  playSound(SND_RESULT);
 }
 
 // ================================================================ SOLO role
@@ -624,7 +665,7 @@ void armSolo() {
   lastShownBucket = -1; lastShownPresent = -1;
 }
 void handleLap(unsigned long nowUs) {
-  if (!lapArmed) { lapArmed = true; lapStartUs = nowUs; Serial.println(F("LAP: clock started - break the beam again to stop it")); holdingResult = false; dispTitle("Lap running"); dispTime(0); beep(1200, 60); }
+  if (!lapArmed) { lapArmed = true; lapStartUs = nowUs; Serial.println(F("LAP: clock started - break the beam again to stop it")); holdingResult = false; dispTitle("Lap running"); dispTime(0); playSound(SND_START); }
   else {
     // Second break stops the clock and LEAVES the result on screen. Restarting
     // straight away, as this used to, wiped the time after a single frame and
@@ -635,12 +676,13 @@ void handleLap(unsigned long nowUs) {
 }
 void soloLoop() {
   unsigned long nowMs = millis();
+  soundTick(nowMs);
   bool a = beamA.update();
   bool b = beamB.update();
   digitalWrite(LED_BUILTIN, beamA.beamPresent() && (lapMode || beamB.beamPresent()));
 
   if (a) {
-    beep(1500, 60);
+    playSound(SND_START);
     if (lapMode) handleLap(beamA.lastTriggerUs);
     else switch (state) {
       case ARMED:
@@ -657,7 +699,7 @@ void soloLoop() {
     }
   }
   if (b && !lapMode) {
-    beep(2000, 80);
+    playSound(SND_FINISH);
     if (state == RUNNING) {
       tFinishUs = beamB.lastTriggerUs;
       reportRun(tFinishUs - tStartUs, nullptr);
@@ -706,8 +748,9 @@ void soloLoop() {
 
 // ================================================================ START role (radio slave)
 void startGateLoop() {
+  soundTick(millis());
   if (beamA.update()) {
-    beep(1500, 60);
+    playSound(SND_START);
     Serial.print(F("START beam broken (event ")); Serial.print(beamA.eventCount); Serial.println(')');
   }
   digitalWrite(LED_BUILTIN, beamA.beamPresent());
@@ -781,23 +824,24 @@ void handleReply() {
       state = RUNNING; runStartMs = millis();
       Serial.print(F("START! clock running (sync +/-")); Serial.print((bestRttUs / 2 + 500) / 1000); Serial.println(F(" ms)"));
       holdingResult = false; dispTitle("Running"); dispTime(0);
-      beep(1200, 60);
+      playSound(SND_START);   // the finish gate announces the far gate's start too
       if (pendingFinish) finalizeRun();
     }
   }
 }
 void finishGateLoop() {
   unsigned long nowMs = millis();
+  soundTick(nowMs);
   // Lap mode belongs to the solo role. This gate has a start gate to listen to, so
   // it always times start-to-finish. It also could not be switched off reliably: a
   // typed command here shares the wire with ten radio polls a second and is shredded.
   if (beamA.update()) {
     unsigned long nowUs = beamA.lastTriggerUs;
-    beep(2000, 80);
+    playSound(SND_FINISH);
     switch (state) {
       case RUNNING:  tFinishUs = nowUs; finalizeRun(); break;
       case SYNCING:  tFinishUs = nowUs; pendingFinish = true; break;
-      case ARMED:    Serial.println(F("FINISH beam broken but no start was seen - ignored.")); break;
+      case ARMED:    playSound(SND_IGNORED); Serial.println(F("FINISH beam broken but no start was seen - ignored.")); break;
       case COOLDOWN: break;
     }
   }
@@ -888,7 +932,7 @@ void setup() {
   if (role == ROLE_SOLO)   armSolo();
   if (role == ROLE_FINISH) armFinish();
   if (role == ROLE_START)  Serial.println(F("START gate ready - waiting for the finish gate to poll me."));
-  beep(1000, 80);
+  playSound(SND_READY);
 }
 
 void loop() {
@@ -897,6 +941,7 @@ void loop() {
     case ROLE_START:  startGateLoop();  break;
     case ROLE_FINISH: finishGateLoop(); break;
     default: {
+      soundTick(millis());
       beamA.update();
       static unsigned long lastNag = 0;
       if (millis() - lastNag > 3000) { lastNag = millis(); Serial.println(F(">>> Role not set. Type  role solo  or  role start  or  role finish")); }

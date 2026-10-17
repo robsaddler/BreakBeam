@@ -1014,6 +1014,30 @@ order, testing as you go:
 
 ---
 
+## What the sounds mean
+
+The tones are shaped so they can be told apart across a track without looking. **Rising
+means something has begun, falling means something has finished.**
+
+| Event | Sound | Which gate |
+|---|---|---|
+| Power up | one note | both |
+| Start beam broken | **rising** fifth, C6 up to G6 | start, and finish when the radio reports it |
+| Finish beam broken | the same fifth **falling** | finish |
+| Time ready | climbing C6, G6, C7 | finish |
+| Finish broken, no start seen | two flat notes | finish |
+
+Standing at the finish line you hear the whole run: rising as they go, falling as they
+arrive, then the climb when the time lands.
+
+Two design points behind that. Everything sits between 1 and 2 kHz because that is where
+a piezo is loudest, and lower notes are nearly inaudible on one. And the sequences play
+off the clock rather than with delays, because a blocking tune on the start gate would
+stall its reply to the finish gate's poll and drop the link, while on the finish gate it
+would delay detection of the next beam break.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |

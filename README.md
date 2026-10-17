@@ -14,6 +14,7 @@ breaks the FINISH beam, and the finish gate prints the time on your PC.
 | `platformio.ini` | PlatformIO project (open this folder in VS Code). Also builds with the Arduino IDE: open `BreakBeam/BreakBeam.ino`. |
 | `tools/gate.ps1` | PowerShell helper to send a command to a gate and watch its output without an IDE. |
 | `docs/GUIDE.md` | The absolute-beginner build guide, phase by phase. |
+| Start Gate Assembly | Illustrated bench card for soldering the gate without a screen: https://claude.ai/artifact/Kzan8X7PcLM9rDMVA4pDT2 |
 | `ciseco-master/` | Original Ciseco documentation and schematics (not in git). The R017 datasheet and schematic are the key ones. |
 
 ## How the timing works (short version)
@@ -35,7 +36,7 @@ breaks it subtracts the two. No clock sync, no drift problem.
 | `a` | Align mode: live sensor numbers 5x a second. Use while pointing the laser. |
 | `l`, `lap on`, `lap off` | Lap mode, **solo role only**: time between two breaks of the start beam alone. Works with a single sensor and is remembered across resets. |
 | `r` | Re-arm. |
-| `s` | Buzzer on/off. |
+| `s` | Buzzer on/off. Rising = started, falling = finished, climbing = time ready. |
 | `h` | Help. |
 
 ## Roadmap
