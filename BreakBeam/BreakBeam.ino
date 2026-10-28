@@ -32,6 +32,17 @@
   * A gate NEVER answers text it does not recognise: on a shared serial line that
     would start an endless echo war between the two gates.
 
+  Frames, all exactly 12 bytes so the SRF sends them at once
+  -----------------------------------------------------------
+    @P<seq>--------            finish -> start, poll
+    @R<seq><st><evt><age6>     start -> finish, reply
+    @T<run2><hundredths6>-     finish -> start, the time once the clock has STOPPED
+
+  The result frame is queued and sent only when the finish gate is not waiting on
+  a reply, so it takes its turn on a half-duplex radio instead of colliding. It is
+  repeated a few times because nothing acknowledges it and a lost frame would
+  otherwise leave a stale time on the far screen.
+
   Wiring - the core (same on every board)
   ---------------------------------------
     A0  START beam sensor: LDR from 5V to A0, 10k from A0 to GND.
@@ -566,6 +577,11 @@ void printSeconds(unsigned long us) {
   Serial.print(frac);
 }
 char hexDigit(uint8_t v) { return "0123456789ABCDEF"[v & 0x0F]; }
+void printHundredths(unsigned long h) {        // 410 -> "4.10"
+  Serial.print(h / 100); Serial.print('.');
+  if (h % 100 < 10) Serial.print('0');
+  Serial.print(h % 100);
+}
 
 bool alignMode = false, lapMode = false;
 unsigned long lastAlignPrintMs = 0;
@@ -747,8 +763,21 @@ void soloLoop() {
 }
 
 // ================================================================ START role (radio slave)
+// The start gate never knows a time: it only knows its own beam broke. The finish
+// gate does the arithmetic and sends the answer back, which is what lets a screen
+// at this end show the run that has just happened.
+void showRemoteResult(unsigned int run, unsigned long h) {
+  Serial.print(F("Result from the finish gate: run ")); Serial.print(run);
+  Serial.print(F(", ")); printHundredths(h); Serial.println(F(" s"));
+  char title[17]; snprintf(title, sizeof(title), "Run %u", run);
+  holdingResult = true; lastShownBucket = -1; lastShownPresent = -1;
+  dispTitle(title);
+  dispTime((h > 9999UL ? 9999UL : h) * 10000UL);   // the display caps at 99.99 s
+}
+
 void startGateLoop() {
-  soundTick(millis());
+  unsigned long nowMs = millis();
+  soundTick(nowMs);
   if (beamA.update()) {
     playSound(SND_START);
     Serial.print(F("START beam broken (event ")); Serial.print(beamA.eventCount); Serial.println(')');
@@ -762,10 +791,23 @@ void startGateLoop() {
       if (age >= 0) snprintf(out, sizeof(out), "@R%c%c%c%06ld", lineBuf[2], status, hexDigit(beamA.eventCount), age);
       else          snprintf(out, sizeof(out), "@R%c%c%c------", lineBuf[2], status, beamA.hasEvent ? hexDigit(beamA.eventCount) : '-');
       Serial.write(out, 11); Serial.write('\n');
+    } else if (lineBuf[0] == '@' && lineBuf[1] == 'T' && strlen(lineBuf) == 11) {
+      char runHex[3] = { lineBuf[2], lineBuf[3], 0 };
+      char hs[7];    memcpy(hs, lineBuf + 4, 6); hs[6] = 0;
+      showRemoteResult((unsigned int)strtoul(runHex, NULL, 16), strtoul(hs, NULL, 10));
     } else if (lineBuf[0] != '@' && lineBuf[0]) {
-      handleCommonCommand(lineBuf);
+      handleCommonCommand(lineBuf);   // a PC command or the other gate's chatter: never answer it
     }
   }
+
+  // With a screen fitted this end, it doubles as the alignment aid, which is the
+  // only reason aiming the far laser at this gate is otherwise a squint at one LED.
+  if (!beamA.beamPresent()) {
+    if (beamGoneSinceMs == 0) beamGoneSinceMs = nowMs;
+    if (elapsed(nowMs, beamGoneSinceMs, BEAM_GONE_GRACE_MS)) holdingResult = false;
+  } else beamGoneSinceMs = 0;
+  if (!holdingResult) dispArmed(beamA.beamPresent(), beamA.reading);
+
   alignPrint();
 }
 
@@ -776,8 +818,19 @@ bool          awaitingReply = false, pendingFinish = false;
 unsigned long tPollSentUs = 0, pollSentMs = 0, nextPollMs = 0;
 unsigned long lastRttUs = 0, bestRttUs = 0;
 char          lastSeenEvt = '-', slaveStatus = '?';
+bool          resultPending = false;
+unsigned long resultHundredths = 0;
+uint8_t       resultRepeats = 0;
 
 void armFinish() { state = ARMED; pendingFinish = false; Serial.println(F("[ARMED] waiting for the START beam...")); lastShownBucket = -1; lastShownPresent = -1; }
+// Queued rather than sent on the spot: the radio is half duplex, and firing this
+// while the start gate is mid-reply would collide with it.
+void sendResult() {
+  char out[13];
+  snprintf(out, sizeof(out), "@T%02X%06lu-", (unsigned int)(runNumber & 0xFF), resultHundredths);
+  Serial.write(out, 11); Serial.write('\n');
+}
+
 void sendPoll() {
   pollSeq = (pollSeq + 1) & 0x0F;
   char out[13];
@@ -795,6 +848,9 @@ void finalizeRun() {
     snprintf(note, sizeof(note), "(start +/-%lu ms)", (bestRttUs / 2 + 500) / 1000);
     reportRun(elapsed, note);
   }
+  resultHundredths = (elapsed + 5000UL) / 10000UL;      // hundredths of a second
+  if (resultHundredths > 999999UL) resultHundredths = 999999UL;
+  resultPending = true; resultRepeats = 3;              // nothing acknowledges it
   state = COOLDOWN; cooldownStartMs = millis(); pendingFinish = false;
 }
 void handleReply() {
@@ -873,8 +929,14 @@ void finishGateLoop() {
     if (linkUp && missedPolls >= LINK_LOST_AFTER) { linkUp = false; seenSlaveOnce = false; Serial.println(F("Radio link DOWN (no reply from the START gate)")); }
   }
   if (!awaitingReply && radioOk) {
-    unsigned long interval = (state == SYNCING) ? 0 : POLL_INTERVAL_MS;
-    if (nowMs - nextPollMs >= interval) { nextPollMs = nowMs; sendPoll(); }
+    if (resultPending) {                      // takes its turn ahead of the next poll
+      sendResult();
+      if (--resultRepeats == 0) resultPending = false;
+      nextPollMs = nowMs;
+    } else {
+      unsigned long interval = (state == SYNCING) ? 0 : POLL_INTERVAL_MS;
+      if (elapsed(nowMs, nextPollMs, interval)) { nextPollMs = nowMs; sendPoll(); }
+    }
   }
 
   if ((state == RUNNING || state == SYNCING) && elapsed(nowMs, runStartMs, RUN_TIMEOUT_MS)) { Serial.println(F("No finish within 60 s - run abandoned.")); armFinish(); }

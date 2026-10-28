@@ -1014,6 +1014,32 @@ order, testing as you go:
 
 ---
 
+## The radio protocol
+
+Three frame types, each exactly 12 bytes including the newline, because the SRF's packet
+size is 12 and a shorter message would sit in its buffer waiting for a 16 ms timeout.
+
+| Frame | Direction | Meaning |
+|---|---|---|
+| `@P<seq>--------` | finish to start | poll, ten times a second |
+| `@R<seq><st><evt><age6>` | start to finish | reply: beam state, event counter, and how long ago it broke |
+| `@T<run2><hundredths6>-` | finish to start | the time, once the clock has **stopped** |
+
+The result frame is what lets a screen at the start end show the run that just happened,
+since the start gate otherwise never learns a time: it only knows its own beam broke.
+
+Two details in how it is sent. It is **queued, not sent on the spot**, and goes out only
+when the finish gate is not waiting on a reply, because the radio is half duplex and
+firing it while the start gate was mid-reply would collide. And it is **repeated three
+times**, because nothing acknowledges it and a single lost frame would leave a stale time
+on the far screen.
+
+Nothing is transmitted while a run is in progress. That matters beyond tidiness: it is
+what makes it safe to hang a Bluetooth module off the same result, since any transmission
+happens between runs and can never delay a measurement.
+
+---
+
 ## What the sounds mean
 
 The tones are shaped so they can be told apart across a track without looking. **Rising
