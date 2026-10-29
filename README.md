@@ -39,6 +39,28 @@ breaks it subtracts the two. No clock sync, no drift problem.
 | `s` | Buzzer on/off. Rising = started, falling = finished, climbing = time ready. |
 | `h` | Help. |
 
+## Direction change, 29 Oct 2026: moving to ESP32
+
+The Uno build works and is proven to millisecond accuracy, but it is being replaced by
+an ESP32 as the main board of each gate.
+
+The deciding argument is not the web app that prompted it. **The Uno has one serial port
+shared between the radio and USB**, and that single fact is behind most of the bugs this
+project hit: the echo war between the gates, commands shredded by radio traffic, lap
+mode that could not be switched off, uploads failing whenever a shield was wired, and
+the garbled characters from a floating D8. An ESP32 has three serial ports, so the radio
+gets one to itself and none of that remains possible. Wifi and Bluetooth come with it.
+
+**Carried over:** the timing design (poll, reply with event age, no clock
+synchronisation), the three-frame protocol, the sensors and their divider, the hoods,
+lasers, clamps and tripods, and the SRF radios on the same six-wire connection, just to
+an ESP32 instead. Nothing had been soldered, so nothing is wasted.
+
+**Replaced:** the two Unos, about £25, and the firmware, which is in git either way.
+
+**On hold:** the prototype-shield assembly and the case design, the latter because it
+was sized around a three-board stack that no longer exists.
+
 ## Roadmap
 
 1. **Phase 1 - radio link** (done, 15-16 ms round trip): shields on, no other wiring.
